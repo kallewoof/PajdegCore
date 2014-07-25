@@ -75,7 +75,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		39076AC6D1234B4387408554 /* pajdeg.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = pajdeg.podspec; path = ../pajdeg.podspec; sourceTree = "<group>"; };
+		39076AC6D1234B4387408554 /* PajdegCore.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = PajdegCore.podspec; path = ../PajdegCore.podspec; sourceTree = "<group>"; };
 		3BC84C4173944B52B5B8BBFD /* libPods-pajdeg.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-pajdeg.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4633433B8C0E4312B08C9D61 /* libPods-Tests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Tests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F1CC999F56D4D589092242B /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
@@ -297,7 +297,7 @@
 		60FF7A9C1954A5C5007DD14C /* Podspec Metadata */ = {
 			isa = PBXGroup;
 			children = (
-				39076AC6D1234B4387408554 /* pajdeg.podspec */,
+				39076AC6D1234B4387408554 /* PajdegCore.podspec */,
 				ED56CD60A2DC45BB99E45765 /* README.md */,
 				4F1CC999F56D4D589092242B /* LICENSE */,
 			);

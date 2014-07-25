@@ -1,5 +1,5 @@
 #
-# Be sure to run `pod lib lint pajdeg.podspec' to ensure this is a
+# Be sure to run `pod lib lint PajdegCore.podspec' to ensure this is a
 # valid spec and remove all comments before submitting the spec.
 #
 # Any lines starting with a # are optional, but encouraged
@@ -8,7 +8,7 @@
 #
 
 Pod::Spec.new do |s|
-  s.name             = "pajdeg"
+  s.name             = "PajdegCore"
   s.version          = "0.0.1"
   s.summary          = "C library for mutating PDFs"
   s.description      = <<-DESC
