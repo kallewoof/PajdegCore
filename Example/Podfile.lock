@@ -1,0 +1,20 @@
+PODS:
+  - Expecta (0.3.1)
+  - pajdeg (0.1.0)
+  - Specta (0.2.1)
+
+DEPENDENCIES:
+  - Expecta
+  - pajdeg (from `../`)
+  - Specta (~> 0.2.1)
+
+EXTERNAL SOURCES:
+  pajdeg:
+    :path: ../
+
+SPEC CHECKSUMS:
+  Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
+  pajdeg: 08910a423285262b37e262e2e97f204f91a78492
+  Specta: 9141310f46b1f68b676650ff2854e1ed0b74163a
+
+COCOAPODS: 0.33.1
