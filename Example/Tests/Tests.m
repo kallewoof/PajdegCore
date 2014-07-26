@@ -26,12 +26,17 @@
 #define PIPE_FILE_IN   PIPE_FILE_IN_BASE  ".pdf"
 #define PIPE_FILE_OUT  PIPE_FILE_OUT_BASE ".pdf"
 
+PDTaskResult taskTestFunc(PDPipeRef pipe, PDTaskRef task, PDObjectRef object, void *info)
+{
+    return PDTaskDone;
+}
+
 SpecBegin(Pajdeg)
 
-//NSFileManager *_fm = [NSFileManager defaultManager];
-__block PDPipeRef _pipe;
-//__block char *buf_in, *buf_out;
-//__block PDInteger len_in, len_out;
+__block NSFileManager *_fm = [NSFileManager defaultManager];
+__block PDPipeRef _pipe = NULL;
+__block char *buf_in, *buf_out;
+__block PDInteger len_in, len_out;
 
 pd_pdf_implementation_use();
 
@@ -43,19 +48,65 @@ afterAll(^{
     pd_pdf_implementation_discard();
 });
 
+void (^configIn)(NSString *file_in, NSString *file_out) = ^(NSString *file_in, NSString *file_out) {
+    if (_pipe) {
+        PDRelease(_pipe);
+    }
+    
+    XCTAssertNotNil(file_in, @"input file not found in bundle");
+    XCTAssertNotNil(file_out, @"output file path creation failure");
+    
+    _fm = [NSFileManager defaultManager];
+    XCTAssertTrue([_fm fileExistsAtPath:file_in], @"input file not found: %@", file_in);
+    [_fm createDirectoryAtPath:NSTemporaryDirectory() withIntermediateDirectories:YES attributes:nil error:nil];
+    [_fm removeItemAtPath:file_out error:NULL];
+
+    _pipe = PDPipeCreateWithFilePaths([file_in cStringUsingEncoding:NSUTF8StringEncoding], [file_out cStringUsingEncoding:NSUTF8StringEncoding]);
+
+    expect(_pipe).toNot.beNil();
+    if (! _pipe) {
+        NSLog(@"PDPipeCreateWithFilePaths(\n\t%@\n\t%@\n)", file_in, file_out);
+        assert(0);
+    }
+    
+};
+
+void (^configStd)(void) = ^{
+    NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:PIPE_FILE_IN_BASE ofType:@"pdf"];
+    NSString *file_out = [NSTemporaryDirectory() stringByAppendingPathComponent:PIPE_FILE_OUT];
+
+    configIn(file_in, file_out);
+};
+
+void (^configStdVerify)(void) = ^{
+    NSString *file_in = [NSTemporaryDirectory() stringByAppendingPathComponent:PIPE_FILE_OUT];
+    NSString *file_out  = @"/dev/null";
+  
+    configIn(file_in, file_out);
+};
+
+describe(@"pipe", ^{
+    it(@"should execute", ^{
+        configStd();
+    
+        long long objects = PDPipeExecute(_pipe);
+        expect(objects).to.beGreaterThan(-1);
+    });
+});
+
 describe(@"MD5 implementation", ^{
     // "The quick brown fox jumps over the lazy dog"
     // 9e107d9d372bb6826bd81d3542a419d6
     
-    int i;
-    char *key = "The quick brown fox jumps over the lazy dog";
-    const char md [] = {0x9e, 0x10, 0x7d, 0x9d, 0x37, 0x2b, 0xb6, 0x82, 0x6b, 0xd8, 0x1d, 0x35, 0x42, 0xa4, 0x19, 0xd6};
-    char *res = malloc(16);
-    
-    pd_md5((unsigned char *)key, (unsigned int)strlen(key), (unsigned char *)res);
-    
-    i = memcmp(res, md, 16);
     it(@"should work", ^{
+        int i;
+        char *key = "The quick brown fox jumps over the lazy dog";
+        const char md [] = {0x9e, 0x10, 0x7d, 0x9d, 0x37, 0x2b, 0xb6, 0x82, 0x6b, 0xd8, 0x1d, 0x35, 0x42, 0xa4, 0x19, 0xd6};
+        char *res = malloc(16);
+        
+        pd_md5((unsigned char *)key, (unsigned int)strlen(key), (unsigned char *)res);
+        
+        i = memcmp(res, md, 16);
         expect(i).to.equal(0);
     });
 });
@@ -89,14 +140,20 @@ describe(@"RC4 implementation", ^{
 });
 
 describe(@"object arrays", ^{
-    pd_stack defs = NULL;
-    PDScannerRef scanner = PDScannerCreateWithState(arbStream);
+    
+    __block pd_stack defs = NULL;
+    __block PDScannerRef scanner = PDScannerCreateWithState(arbStream);
     __block char *buf = malloc(1024);
     __block PDObjectRef object;
     char *sbuf = "[ 0 1 ]\n";
-    PDScannerAttachFixedSizeBuffer(scanner, sbuf, strlen(sbuf));
-    XCTAssertTrue(PDScannerPopStack(scanner, &defs), @"Scanner pop stack failed");
-    PDRelease(scanner);
+    
+    it(@"should config", ^{
+        
+        PDScannerAttachFixedSizeBuffer(scanner, sbuf, strlen(sbuf));
+        expect(PDScannerPopStack(scanner, &defs)).to.beTruthy();
+        PDRelease(scanner);
+        
+    });
 
     it(@"should construct correctly", ^{
         
@@ -196,13 +253,19 @@ describe(@"object dicts", ^{
     __block PDNumberRef num;
 //    __block PDStringRef str;
     
-    pd_stack defs = NULL;
-    PDScannerRef scanner = PDScannerCreateWithState(arbStream);
+    __block pd_stack defs = NULL;
+    __block PDScannerRef scanner;
     char *sbuf = "<< /Foo 1 /Bar 2 >>\n";
-    PDScannerAttachFixedSizeBuffer(scanner, sbuf, strlen(sbuf));
-    XCTAssertTrue(PDScannerPopStack(scanner, &defs), @"Scanner pop stack failed");
-    PDRelease(scanner);
-
+    
+    it(@"should config", ^{
+        
+        scanner = PDScannerCreateWithState(arbStream);
+        PDScannerAttachFixedSizeBuffer(scanner, sbuf, strlen(sbuf));
+        expect(PDScannerPopStack(scanner, &defs)).to.beTruthy();
+        PDRelease(scanner);
+        
+    });
+    
     it(@"should construct correctly", ^{
         
         object = PDObjectCreateFromDefinitionsStack(1, defs);
@@ -301,55 +364,862 @@ describe(@"object dicts", ^{
     });
 });
 
+describe(@"retained types", ^{
+    char *uabuf = "hello";
+    
+    it(@"shouldn't crash", ^{
+        PDObjectRef ob = PDObjectCreate(0, 0);
+        PDObjectSetStream(ob, uabuf, 5, true, false, false);
+        expect(uabuf).to.equal(ob->ovrStream);
+        afterAll(^{
+            PDRelease(ob); // <-- crash = uabuf was freed invalidly
+        });
+    });
+
+    it(@"shouldn't leak", ^{
+        PDObjectRef ob = PDObjectCreate(0, 0);
+        char *abuf = strdup("hello");
+        PDObjectSetStream(ob, abuf, 5, true, true, false);
+        PDRelease(ob); // <-- leak = abuf was not freed as it should have been (not sure how to check if leaking or not, tbh)
+    });
+});
+
+describe(@"scanner nested parentheses", ^{
+#define EXP1 "(Parenthesis)"
+#define EXP2 "(Paren\\(thes\\)is)"
+#define EXP3 "(Pa\\(ren\\)th\\(e\\(s\\)\\)is)"
+#define EXP4 "(Par ens \\(in the\\) hood)"
+#define INP1 "(Parenthesis)"
+#define INP2 "(Paren(thes)is)"
+#define INP3 "(Pa(ren)th(e(s))is)"
+#define INP4 "(Par ens (in the) hood)"
+    
+    char *reqz[] = {EXP1, EXP2, EXP3, EXP4};
+    char **req = malloc(sizeof(char*) * 4);
+    memcpy(req, reqz, sizeof(char*)*4);
+    char *buf = ("<< /Par " INP1 " >>\n"
+                 "<< /Par2 " INP2 " >>\n"
+                 "<< /Par3 " INP3 " >>\n"
+                 "<< /Par4 " INP4 " >>\n");
+    
+    PDScannerRef scn = PDScannerCreateWithState(pdfRoot);
+    scn->buf = buf;
+    scn->fixedBuf = true;
+    scn->bsize = strlen(buf);
+    scn->boffset = 0;
+    __block pd_stack stack;
+    
+    int ix = 4;
+    it(@"should parse parens validly", ^{
+        
+        for (int i = 0; i < ix; i++) {
+            XCTAssertTrue(true == PDScannerPopStack(scn, &stack), @"Scanner did not pop a stack as expected.");
+            PDDictionaryRef d = PDInstanceCreateFromComplex(&stack);
+            PDDictionaryPrint(d);
+            PDStringRef s = PDDictionaryGetEntry(d, [i > 0 ? [NSString stringWithFormat:@"Par%d", i+1] : @"Par" UTF8String]);
+            expect(strcmp(req[i], PDStringEscapedValue(s, true))).to.equal(0);
+//            XCTAssertTrue(0 == strcmp(req[i], PDStringEscapedValue(s, true)), @"invalid result: %s", PDStringEscapedValue(s, true));
+            //        XCTAssertTrue(0 == strcmp(req[i], (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info)), @"invalid result: %s", (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info));
+            PDRelease(d);
+            pd_stack_destroy(&stack);
+        }
+
+    });
+
+    afterAll(^{
+        PDRelease(scn);
+        free(req);
+    });
+});
+
+void (^singleFilterTest)(NSString *name, PDStreamFilterRef filter) = ^(NSString *name, PDStreamFilterRef filter) {
+#define BUF_CAP_INIT 16
+#define BUF_CAP_GROW 8
+
+    __block int buf_cap = BUF_CAP_INIT;
+    __block PDInteger len_ns;
+    __block char *seg;
+    
+    describe([NSString stringWithFormat:@"%@ filter", name], ^{
+        it(@"should init", ^{
+            
+            expect(PDStreamFilterInit(filter)).to.beTruthy();
+            PDStreamFilterPrepare(filter, buf_in, len_in, buf_out, buf_cap);
+            
+        });
+        
+        it(@"should process input", ^{
+            
+            len_out = PDStreamFilterBegin(filter);
+            while (! filter->finished && ! filter->failing) {
+                buf_cap += BUF_CAP_GROW;
+                buf_out = realloc(buf_out, buf_cap);
+                filter->bufOut = (unsigned char *)(buf_out + len_out);
+                filter->bufOutCapacity += BUF_CAP_GROW;
+                len_out += PDStreamFilterProceed(filter);
+            }
+            
+            expect(filter->failing).toNot.beTruthy();
+            expect(len_out).to.beGreaterThan(0);
+        });
+        
+        it(@"should reinit correctly", ^{
+            
+            // reinit filter
+            expect(PDStreamFilterDone(filter)).to.beTruthy();
+            expect(PDStreamFilterInit(filter)).to.beTruthy();
+            
+        });
+        
+        it(@"should finish with 1.5x the expected output capacity", ^{
+            
+            seg = buf_out;
+            len_ns = len_out + len_out/2;
+            if (len_ns < 128) len_ns = 128;
+            buf_out = malloc(len_ns);
+            PDStreamFilterPrepare(filter, buf_in, len_in, buf_out, len_ns);
+            len_ns = PDStreamFilterBegin(filter);
+            expect(filter->finished).to.beTruthy();// Filter did not finish despite being given enough buffer space (1.5*expected output, minimum 128b).
+            expect(filter->failing).toNot.beTruthy(); 
+            expect(len_ns).to.equal(len_out); // Segmented length and non-segmented length do not match up
+            expect(memcmp(seg, buf_out, len_out)).to.equal(0); // Memory comparison of segmented vs non-segmented filter results do not match.");
+            free(seg);
+            
+            PDRelease(filter);
+            
+        });
+
+    });
+    
+};
+
+void (^filterTest)(NSString *name, PDStreamFilterRef filterIn, PDStreamFilterRef filterOut, char *string) = ^(NSString *name, PDStreamFilterRef filterIn, PDStreamFilterRef filterOut, char *string) {
+    
+    // this is zlib compression/decompression without prediction 
+    __block char *expect_in;
+    __block PDInteger len_x;
+    
+    len_x = len_in = strlen(string);
+    expect_in = malloc(len_in);
+    buf_in = malloc(len_in);
+    buf_out = malloc(BUF_CAP_INIT);
+    
+    strcpy(expect_in, string); //"Hello, World!@#$%^&*().");  // we expect this on the way back
+    strcpy(buf_in, expect_in);
+
+    describe([NSString stringWithFormat:@"%@ filter", name], ^{
+
+        it(@"should set up correctly", ^{
+            expect(strcmp(expect_in, buf_in)).to.equal(0);
+        });
+    
+//    NSLog(@"%@: start = %@", name, [self bufDesc:buf_in len:len_in]);
+        
+        it(@"should work IN", ^{
+
+            singleFilterTest([NSString stringWithFormat:@"%@ IN", name], filterIn);
+    
+//    NSLog(@"%@: out = %@", name, [self bufDesc:buf_out len:len_out]);
+            
+            // we don't keep some right answer lying around, although in reality we probably should; for now just check that it decompresses right
+            
+            free(buf_in);
+            len_in = len_out;
+            buf_in = buf_out;
+            buf_out = malloc(BUF_CAP_INIT);
+            
+        });
+        
+        it(@"should work OUT", ^{
+    
+            singleFilterTest([NSString stringWithFormat:@"%@ OUT", name], filterOut);
+            
+            expect(len_out).to.equal(len_x);
+    
+            expect(strncmp(expect_in, buf_out, len_out)).to.equal(0);
+    
+//    NSLog(@"%@: back = %@", name, [self bufDesc:buf_out len:len_out]);
+    
+//    XCTAssertTrue(0 == strncmp(expect_in, buf_out, len_out), @"%@ did not return an identical string as it was given", name);
+    
+            free(expect_in);
+            free(buf_in);
+            free(buf_out);
+            
+        });
+
+    });
+};
+
+void (^filterTestHelloWorld)(NSString *name, PDStreamFilterRef filterIn, PDStreamFilterRef filterOut) = ^(NSString *name, PDStreamFilterRef filterIn, PDStreamFilterRef filterOut) {
+    filterTest(name, filterIn, filterOut, "Hello, World!@#$%^&*()..");
+};
+
+describe(@"flate decode", ^{
+    __block PDStreamFilterRef zipFilter, unzipFilter;
+
+    it(@"should config", ^{
+        configStd();
+    });
+
+    it(@"should find ZIP", ^{
+        zipFilter = PDStreamFilterObtain("FlateDecode", false, NULL);
+        expect(zipFilter).toNot.beNil();
+    });
+
+    it(@"should find UNZIP", ^{
+        unzipFilter = PDStreamFilterObtain("FlateDecode", true, NULL);
+        expect(unzipFilter).toNot.beNil();
+    });
+    
+    it(@"should run correctly", ^{
+        filterTestHelloWorld(@"ZIP", zipFilter, unzipFilter);
+    });
+});
+
+describe(@"flate decode inversion", ^{
+    __block PDStreamFilterRef zipFilter, unzipFilter;
+    
+    it(@"should config", ^{
+        configStd();
+    });
+    
+    it(@"should find ZIP", ^{
+        zipFilter = PDStreamFilterObtain("FlateDecode", false, NULL);
+        expect(zipFilter).toNot.beNil();
+    });
+    
+    it(@"should find ZIP^-1 = UNZIP", ^{
+        unzipFilter = PDStreamFilterCreateInversionForFilter(zipFilter);
+        expect(unzipFilter).toNot.beNil();
+    });
+    
+    it(@"should run correctly", ^{
+        filterTestHelloWorld(@"ZIP(inv)", zipFilter, unzipFilter);
+    });
+});
+
+describe(@"predictor", ^{
+    __block PDStreamFilterRef pred, unpred;
+    
+    it(@"should config", ^{
+        configStd();
+    });
+    
+    it(@"should find predictor", ^{
+        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
+        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        //[@{@"Columns": @(6), @"Predictor": @(12)} PDValue]; //pd_stack_create_from_definition
+        //    (PDDef("6", "Columns",
+        //         "12", "Predictor"));
+        
+        pred = PDStreamFilterObtain("Predictor", false, options);
+        
+        expect(pred).toNot.beNil();
+        
+        PDRelease(options);
+    });
+
+    it(@"should find unpredictor", ^{
+        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
+        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        //[@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
+        //    pd_stack_create_from_definition
+        //    (PDDef("6", "Columns",
+        //           "12", "Predictor"));
+    
+        unpred = PDStreamFilterObtain("Predictor", true, options);
+        expect(unpred).toNot.beNil();
+        
+        PDRelease(options);
+    });
+    
+    it(@"should run correctly", ^{
+        filterTestHelloWorld(@"Predictor", pred, unpred);
+    });
+});
+
+describe(@"predictor inverter", ^{
+    __block PDStreamFilterRef pred, unpred;
+
+    it(@"should config", ^{
+        configStd();
+    });
+    
+    it(@"should find predictor", ^{
+        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
+        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        //[@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
+        //    pd_stack_create_from_definition
+        //    (PDDef("6", "Columns",
+        //           "12", "Predictor"));
+        
+        pred = PDStreamFilterObtain("Predictor", false, options);
+        expect(pred).toNot.beNil();
+        PDRelease(options);
+    });
+    
+    it(@"should find predictor^-1 = unpredictor", ^{
+        
+        unpred = PDStreamFilterCreateInversionForFilter(pred);
+        expect(unpred).toNot.beNil();
+        
+    });
+
+    it(@"should run correctly", ^{
+        filterTestHelloWorld(@"Predictor(inv)", pred, unpred);
+    });
+});
+
+describe(@"flate decode predictor", ^{
+    __block PDStreamFilterRef pred, unpred;
+    __block PDStreamFilterRef flate, deflate;
+
+    it(@"should config", ^{
+        configStd();
+    });
+
+    // predict + compress
+    
+    it(@"should find predictor", ^{
+        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
+        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+    
+        pred = PDStreamFilterObtain("Predictor", false, options);
+        expect(pred).toNot.beNil();
+        
+        PDRelease(options);
+    });
+    
+    it(@"should find unpredictor", ^{
+        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
+        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        
+        unpred = PDStreamFilterObtain("Predictor", true, options);
+        expect(unpred).toNot.beNil();
+        
+        PDRelease(options);
+    });
+
+    it(@"should find flate", ^{
+        flate = PDStreamFilterObtain("FlateDecode", false, NULL);
+        expect(flate).toNot.beNil();
+    });
+    
+    it(@"should find deflate", ^{
+        deflate = PDStreamFilterObtain("FlateDecode", true, NULL);
+        expect(deflate).toNot.beNil();
+    });
+
+    it(@"should run correctly", ^{
+        
+        expect(pred->nextFilter).to.beNil();
+        expect(unpred->nextFilter).to.beNil();
+        expect(flate->nextFilter).to.beNil();
+        expect(deflate->nextFilter).to.beNil();
+        
+        pred->nextFilter = flate;
+        deflate->nextFilter = unpred;
+        
+        filterTestHelloWorld(@"FlateDecode+Predictor", pred, deflate);
+
+    });
+});
+
+describe(@"flate decode predictor inversion", ^{
+    
+    __block PDStreamFilterRef pred;
+    __block PDStreamFilterRef flate, deflate;
+
+    it(@"should config", ^{
+        configStd();
+    });
+
+    // predict + compress
+    
+    it(@"should find predictor", ^{
+        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
+        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        
+        pred = PDStreamFilterObtain("Predictor", false, options);
+        expect(pred).toNot.beNil();
+        
+        PDRelease(options);
+    });
+    
+    it(@"should find flate", ^{
+        flate = PDStreamFilterObtain("FlateDecode", false, NULL);
+        expect(flate).toNot.beNil();
+    });
+
+    it(@"should find pred+flate^-1 = deflate+unpred", ^{
+        
+        expect(pred->nextFilter).to.beNil();
+        expect(flate->nextFilter).to.beNil();
+        
+        pred->nextFilter = flate;
+        
+        deflate = PDStreamFilterCreateInversionForFilter(pred);
+        expect(deflate).toNot.beNil();
+        
+    });
+
+    it(@"should run correctly", ^{
+        filterTestHelloWorld(@"FlateDecode+Predictor(inv)", pred, deflate);
+    });
+
+});
+
+describe(@"flate decode predictor inversion multi-pass", ^{
+    __block PDStreamFilterRef pred;
+    __block PDStreamFilterRef flate, deflate;
+
+    it(@"should config", ^{
+        configStd();
+    });
+    
+    // predict + compress
+    
+    it(@"should find predictor", ^{
+        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
+        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        
+        pred = PDStreamFilterObtain("Predictor", false, options);
+        expect(pred).toNot.beNil();
+        
+        PDRelease(options);
+    });
+    
+    it(@"should find flate", ^{
+        flate = PDStreamFilterObtain("FlateDecode", false, NULL);
+        expect(flate).toNot.beNil();
+    });
+    
+    it(@"should find pred+flate^-1 = deflate+unpred", ^{
+        
+        expect(pred->nextFilter).to.beNil();
+        expect(flate->nextFilter).to.beNil();
+        
+        pred->nextFilter = flate;
+        
+        deflate = PDStreamFilterCreateInversionForFilter(pred);
+        expect(deflate).toNot.beNil();
+        
+    });
+    
+    it(@"should run correctly", ^{
+        filterTest(@"FlateDecode+Predictor(inv)", pred, deflate, "012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345");
+    });
+});
+
+describe(@"task filter", ^{
+    it(@"should config", ^{
+        configStd();
+    });
+    
+    it(@"should execute", ^{
+        PDTaskRef filter, task;
+        filter = PDTaskCreateFilter(PDPropertyRootObject);
+        task = PDTaskCreateMutator(taskTestFunc);
+        PDTaskAppendTask(filter, task);
+        PDPipeAddTask(_pipe, filter);
+        
+        PDRelease(filter);
+        PDRelease(task);
+    
+        expect(PDPipeExecute(_pipe)).to.beGreaterThan(-1);
+    });
+});
+
+//describe(@"block task", ^{
+//    configStd();
+//    
+//    PDTaskRef task;
+//    task = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
+//        return PDTaskDone;
+//    });
+//    
+//    PDPipeAddTask(_pipe, task);
+//    
+//    PDRelease(task);
+//    
+//    XCTAssertTrue(-1 < PDPipeExecute(_pipe), @"PDPipeExecute() returned error code");
+//});
+
+describe(@"single page copying", ^{
+    __block PDPipeRef pipe2;
+    it(@"should config", ^{
+        configStd();
+    
+        pipe2 = _pipe;
+        _pipe = NULL;
+        NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"pxp" ofType:@"pdf"];
+        
+        configIn(file_in, @"/dev/null");
+    });
+    
+    __block PDPageRef page;
+    it(@"should create page correctly", ^{
+        page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
+        expect(page).toNot.beNil();
+    });
+    __block PDPageRef impPage;
+    it(@"should import page correctly", ^{
+        impPage = PDPageInsertIntoPipe(page, pipe2, 3);
+        expect(impPage).toNot.beNil();
+        PDRelease(page);
+    });
+
+    it(@"should execute", ^{
+        PDPipeExecute(pipe2);
+        PDPipeExecute(_pipe);
+        
+        PDRelease(pipe2);
+    });
+});
+
+describe(@"single page appending", ^{
+    __block PDPipeRef pipe2;
+    __block NSInteger count;
+    it(@"should config", ^{
+        configStd();
+        
+        pipe2 = _pipe;
+        _pipe = NULL;
+        NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"pxp" ofType:@"pdf"];
+        
+        configIn(file_in, @"/dev/null");
+        
+        count = PDCatalogGetPageCount(PDParserGetCatalog(PDPipeGetParser(pipe2)));
+    });
+    
+    __block PDPageRef page;
+    it(@"should create page", ^{
+        page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
+        expect(page).toNot.beNil();
+    });
+    __block PDPageRef impPage;
+    it(@"should import page", ^{
+        impPage = PDPageInsertIntoPipe(page, pipe2, 4);
+        expect(impPage).toNot.beNil();
+        PDRelease(page);
+    });
+
+    it(@"should execute correctly", ^{
+        
+        PDPipeExecute(pipe2);
+        PDPipeExecute(_pipe);
+        
+        PDRelease(pipe2);
+        
+        configStdVerify();
+        
+    });
+    
+    it(@"should get +1 page count", ^{
+        
+        NSInteger count2 = PDCatalogGetPageCount(PDParserGetCatalog(PDPipeGetParser(_pipe)));
+        
+        expect(count2).to.equal(count + 1);
+        
+    });
+    
+});
+
+describe(@"multi page copying", ^{
+    __block PDPipeRef pipe2;
+    it(@"should config", ^{
+        configStd();
+        
+        pipe2 = _pipe;
+        _pipe = NULL;
+        NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"pxp" ofType:@"pdf"];
+        
+        configIn(file_in, @"/dev/null");
+    });
+    
+    __block PDPageRef page;
+    it(@"should set up page 2", ^{
+        page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
+        expect(page).toNot.beNil();
+    });
+    __block PDPageRef impPage;
+    it(@"should import page 2", ^{
+        impPage = PDPageInsertIntoPipe(page, pipe2, 3);
+        expect(impPage).toNot.beNil();
+    });
+    
+    __block PDPageRef page2;
+    it(@"should set up page 3", ^{
+        page2 = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 3);
+        expect(page2).toNot.beNil();
+    });
+    __block PDPageRef impPage2;
+    it(@"should import page 3", ^{
+        impPage2 = PDPageInsertIntoPipe(page2, pipe2, 4);
+        expect(impPage2).toNot.beNil();
+    });
+
+    it(@"should execute", ^{
+        
+        PDRelease(page);
+        PDRelease(page2);
+        
+        PDPipeExecute(pipe2);
+        PDPipeExecute(_pipe);
+        
+        PDRelease(pipe2);
+
+    });
+});
+
+describe(@"multi page appending", ^{
+    __block PDPipeRef pipe2;
+    it(@"should config", ^{
+        configStd();
+    
+        pipe2 = _pipe;
+        _pipe = NULL;
+        NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"pxp" ofType:@"pdf"];
+
+        configIn(file_in, @"/dev/null");
+    });
+       
+    __block PDPageRef page;
+    it(@"should set up page 2", ^{
+        page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
+        expect(page).toNot.beNil();
+    });
+    __block PDPageRef impPage;
+    it(@"should import page 2", ^{
+        impPage = PDPageInsertIntoPipe(page, pipe2, 3);
+        expect(impPage).toNot.beNil();
+    });
+    
+    __block PDPageRef page2;
+    it(@"should set up page 3", ^{
+        page2 = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 3);
+        expect(page2).toNot.beNil();
+    });
+    __block PDPageRef impPage2;
+    it(@"should append page 3", ^{
+        impPage2 = PDPageInsertIntoPipe(page2, pipe2, 5);
+        expect(impPage2).toNot.beNil();
+    });
+    
+    it(@"should execute", ^{
+        
+        PDRelease(page);
+        PDRelease(page2);
+        
+        PDPipeExecute(pipe2);
+        PDPipeExecute(_pipe);
+        
+        PDRelease(pipe2);
+        
+    });
+});
+
+sharedExamplesFor(@"a regular PDF", ^(NSDictionary *data) {
+    NSString *pdf = data[@"pdf"];
+//    NSArray *set = data[@"set"];
+    NSString *path = data[@"path"];
+    NSString *infPath = data[@"infPath"];
+    
+    NSFileManager *fm = [NSFileManager defaultManager];
+    
+    NSString *out1 = [NSTemporaryDirectory() stringByAppendingString:@"/out1.pdf"];
+    NSString *out2 = [NSTemporaryDirectory() stringByAppendingString:@"/out2.pdf"];
+//    for (NSString *pdf in set) {
+        if ([[[pdf pathExtension] lowercaseString] isEqualToString:@"pdf"]) {
+//            describe([pdf lastPathComponent], ^{
+//                
+                if ([[pdf lowercaseString] hasSuffix:@".infinite.pdf"]) {
+                    [fm removeItemAtPath:[infPath stringByAppendingString:pdf] error:NULL];
+                    [fm moveItemAtPath:[path stringByAppendingString:pdf] toPath:[infPath stringByAppendingString:pdf] error:NULL];
+                } else {
+                    it(@"should exist", ^{
+                        expect([fm fileExistsAtPath:[path stringByAppendingString:pdf]]).to.beTruthy();
+                    });
+                    
+                    it(@"should work on original", ^{
+                        configIn([path stringByAppendingString:pdf], out1);
+                        PDPipeExecute(_pipe);
+                        expect([fm fileExistsAtPath:out1]).to.beTruthy();
+                    });
+                    
+                    it(@"should work on resulting file", ^{
+                        configIn(out1, out2);
+                        PDPipeExecute(_pipe);
+                        PDRelease(_pipe);
+                        _pipe = nil;
+                        expect([fm fileExistsAtPath:out2]).to.beTruthy();
+                    });
+                }
+                
+//            });
+        }
+//    }
+});
+
+describe(@"test PDF set", ^{
+//    it(@"should parse all PDFs successfully", ^{
+        
+        NSArray *set = @[@"Capture.pdf", @"Chinese_traditional.pdf", @"Japanese.pdf", @"PDF13.pdf", @"PDF15.pdf", @"Tagged.pdf", @"Untagged.pdf", @"Chinese_simplified.pdf", @"Forms.pdf", @"Korean.pdf", @"PDF14.pdf", @"PDF16.pdf", @"TouchUp.pdf"];
+        NSString *path = [[NSBundle bundleForClass:self.class] pathForResource:@"Capture" ofType:@"pdf"];
+        path = [path substringToIndex:path.length - strlen("Capture.pdf")];
+        for (NSString *pdf in set) {
+            itShouldBehaveLike(@"a regular PDF", @{@"pdf": pdf, 
+                                                   @"path": path,
+                                                   @"infPath": NSTemporaryDirectory()});
+        }
+//        runSet(set, path, NSTemporaryDirectory(), NULL);
+        
+//    });
+});
+
+//typedef void (^catalogBlockType)(NSString *pdf, NSString *path, NSString *out1, NSString *out2);
+//
+//catalogBlockType (^catalogBlock)(void) = ^{
+//    NSFileManager *fm = [NSFileManager defaultManager];
+//    return (catalogBlockType) [^(NSString *pdf, NSString *path, NSString *out1, NSString *out2) {
+//        configIn([path stringByAppendingString:pdf], out1);
+//        if (NULL == PDPipeGetParser(_pipe)) {
+//            XCTFail(@"NULL pipe in PDF test for %@", pdf);
+//            return;
+//        }
+//        
+//        PDCatalogRef catalog = PDParserGetCatalog(PDPipeGetParser(_pipe));
+//        NSInteger pageCount = PDCatalogGetPageCount(catalog);
+//        __block NSInteger pagesSeen = 0;
+//        __block NSInteger pagesSeen2 = 0;
+//        __block NSInteger pagesInObStreams = 0;
+//        __block NSInteger *pageIDs = malloc(sizeof(NSInteger) * pageCount);
+//        
+//        __block NSInteger *pageIDs2 = malloc(sizeof(NSInteger) * pageCount);
+//        PDTaskRef pageBlock2 = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
+//            PDInteger obid = PDObjectGetObID(object);
+//            pagesInObStreams += PDObjectGetObStreamFlag(object) == true;
+//            BOOL found = NO;
+//            for (NSInteger i = 0; i < pageCount; i++) {
+//                if (pageIDs2[i] == obid) {
+//                    pageIDs2[i] = -pageIDs[i];
+//                    found = YES;
+//                    break;
+//                }
+//                if (pageIDs2[i] == -obid) {
+//                    // duplicate!
+//                    XCTFail(@"duplicate entry for page %ld (id %ld)!", (long)i, (long)obid);
+//                    found = YES;
+//                    break;
+//                }
+//            }
+//            XCTAssertTrue(found, @"Page with object ID=%ld was not found", (long)obid);
+//            pagesSeen2++;
+//            return PDTaskDone;
+//        });
+//        
+//        PDTaskRef pageFilter;
+//        for (NSInteger i = 0; i < pageCount; i++) {
+//            pageIDs[i] = pageIDs2[i] = PDCatalogGetObjectIDForPage(catalog, i+1);
+//            pageFilter = PDTaskCreateFilterWithValue(PDPropertyPage, i+1);
+//            PDTaskAppendTask(pageFilter, pageBlock2);
+//            PDPipeAddTask(_pipe, pageFilter);
+//            PDRelease(pageFilter);
+//        }
+//        pageFilter = PDTaskCreateFilterWithValue(PDPropertyPDFType, PDFTypePage);
+//        PDTaskRef pageBlock = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
+//            PDInteger obid = PDObjectGetObID(object);
+//            BOOL found = NO;
+//            for (NSInteger i = 0; i < pageCount; i++) {
+//                if (pageIDs[i] == obid) {
+//                    pageIDs[i] = -pageIDs[i];
+//                    found = YES;
+//                    break;
+//                }
+//                if (pageIDs[i] == -obid) {
+//                    // duplicate!
+//                    XCTFail(@"duplicate page %@::%ld (i=%ld)!", pdf, (long)obid, (long)i);
+//                    found = YES;
+//                    break;
+//                }
+//            }
+//            //            XCTAssertTrue(found, @"Page %@::<#%ld> not found", pdf, (long)obid);
+//            pagesSeen += found;
+//            return PDTaskDone;
+//        });
+//        PDTaskAppendTask(pageFilter, pageBlock);
+//        PDPipeAddTask(_pipe, pageFilter);
+//        PDRelease(pageBlock);
+//        PDRelease(pageFilter);
+//        
+//        PDPipeExecute(_pipe);
+//        PDRelease(_pipe);
+//        _pipe = nil;
+//        XCTAssertTrue([fm fileExistsAtPath:out1], @"Pajdeg original failure %@", pdf);
+//        
+//        XCTAssertEqual(pageCount, pagesSeen + pagesInObStreams, @"%@: Not all pages were passed to the PDF TYPE block.", pdf);
+//        XCTAssertEqual(pageCount, pagesSeen2, @"%@: Not all pages were passed to the PAGES block.", pdf);
+//        
+//        /*NSLog(@"*** PAJDEG RECIPE TEST %@ *** ", pdf);
+//         [self configIn:out1 andOut:out2];
+//         PDPipeExecute(_pipe);
+//         PDRelease(_pipe);
+//         XCTAssertTrue([fm fileExistsAtPath:out2], @"Pajdeg internal failure %@", pdf);*/
+//        free(pageIDs);
+//        free(pageIDs2);
+//    } copy];
+//}
+
+#ifdef TEST_PAJDEG_FULL
+
+describe(@"full tests", ^{
+    NSLog(@"*** ABOUT TO PERFORM FULL PAJDEG TESTS -- THIS IS MEMORY AND TIME INTENSIVE ***");
+    NSFileManager *fm = [NSFileManager defaultManager];
+    
+    NSString *path = PAJDEG_PDFS;
+    NSString *infPath = [NSString stringWithFormat:@"/Users/%@/Workspace/pajdeg-inf-pdfs/", NSUserName()];
+    NSArray *pdfs = [fm contentsOfDirectoryAtPath:path error:NULL];
+    [self runSet:pdfs inPath:path moveInfsTo:infPath code:NULL];
+});
+//
+//- (void)testCatalogFull
+//{
+//    NSLog(@"*** ABOUT TO PERFORM FULL PAJDEG TESTS (CATALOG) -- THIS IS MEMORY AND TIME INTENSIVE ***");
+//    NSFileManager *fm = [NSFileManager defaultManager];
+//    
+//    NSString *path = PAJDEG_PDFS;
+//    NSString *infPath = [NSString stringWithFormat:@"/Users/%@/Workspace/pajdeg-inf-pdfs/", NSUserName()];
+//    NSArray *pdfs = [fm contentsOfDirectoryAtPath:path error:NULL];
+//    [self runSet:pdfs inPath:path moveInfsTo:infPath code:[self catalogBlock]];
+//}
+
+#endif
+
 SpecEnd
 
-//- (void)testObjectDicts
+//- (NSString *)bufDesc:(char *)buf len:(PDInteger)len
 //{
+//    char *res = malloc(1 + len * 4);
+//    int j =0;
+//    for (int i = 0; i < len; i++)
+//        if (buf[i] < 32 || buf[i] > 'z') {
+//            j += sprintf(&res[j], "\\%03d", buf[i]);
+//        } else {
+//            res[j++] = buf[i];
+//        }
+//    res[j] = 0;
+//    NSString *str = [NSString stringWithFormat:@"[ %s ] (%ldb)", res, len];
+//    free(res);
+//    return str;
 //}
-//
-//- (void)configIn:(NSString *)file_in andOut:(NSString *)file_out
-//{
-//    if (_pipe) {
-//        PDRelease(_pipe);
-//    }
-//    
-//    XCTAssertNotNil(file_in, @"input file not found in bundle");
-//    XCTAssertNotNil(file_out, @"output file path creation failure");
-//    
-//    _fm = [NSFileManager defaultManager];
-//    XCTAssertTrue([_fm fileExistsAtPath:file_in], @"input file not found: %@", file_in);
-//    [_fm createDirectoryAtPath:NSTemporaryDirectory() withIntermediateDirectories:YES attributes:nil error:nil];
-//    [_fm removeItemAtPath:file_out error:NULL];
-//    
-//    _pipe = PDPipeCreateWithFilePaths([file_in cStringUsingEncoding:NSUTF8StringEncoding], [file_out cStringUsingEncoding:NSUTF8StringEncoding]);
-//    
-//    XCTAssertNotNull(_pipe, @"PDPipeRef creation failed");
-//    if (! _pipe) {
-//        BriefLog(@"PDPipeCreateWithFilePaths(\n\t%@\n\t%@\n)", file_in, file_out);
-//        assert(0);
-//    }
-//}
-//
-//- (void)configStd
-//{
-//    NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:PIPE_FILE_IN_BASE ofType:@"pdf"];
-//    NSString *file_out = [NSTemporaryDirectory() stringByAppendingPathComponent:PIPE_FILE_OUT];
-//    
-//    [self configIn:file_in andOut:file_out];
-//}
-//
-//- (void)configStdVerify
-//{
-//    NSString *file_in = [NSTemporaryDirectory() stringByAppendingPathComponent:PIPE_FILE_OUT];
-//    NSString *file_out  = @"/dev/null";
-//    
-//    [self configIn:file_in andOut:file_out];
-//}
-//
-//#endif // TEST_PAJDEG*
-//
-//#ifdef TEST_PAJDEG
-//
 //- (BOOL)helperComparator:(NSString *)path expected:(id)expected got:(void *)input //destroy:(BOOL)destroy
 //{
 //    PDInstanceType type = PDResolve(input);
@@ -454,571 +1324,6 @@ SpecEnd
 //    XCTAssertTrue(result, @"Object copy code failure");
 //    PDRelease(ob);
 //}
-//
-//- (void)testRetainedTypes
-//{
-//    PDObjectRef ob = PDObjectCreate(0, 0);
-//    char *uabuf = "hello";
-//    PDObjectSetStream(ob, uabuf, 5, true, false, false);
-//    XCTAssertEqual(uabuf, ob->ovrStream, @"Unallocated buffer is not pointed to by object stream.");
-//    PDRelease(ob); // <-- crash = uabuf was freed invalidly
-//    
-//    ob = PDObjectCreate(0, 0);
-//    char *abuf = strdup("hello");
-//    PDObjectSetStream(ob, abuf, 5, true, true, false);
-//    PDRelease(ob); // <-- leak = abuf was not freed as it should have been (not sure how to check if leaking or not, tbh)
-//}
-//
-//- (void)testScannerNestedParentheses
-//{
-//#define EXP1 "(Parenthesis)"
-//#define EXP2 "(Paren\\(thes\\)is)"
-//#define EXP3 "(Pa\\(ren\\)th\\(e\\(s\\)\\)is)"
-//#define EXP4 "(Par ens \\(in the\\) hood)"
-//#define INP1 "(Parenthesis)"
-//#define INP2 "(Paren(thes)is)"
-//#define INP3 "(Pa(ren)th(e(s))is)"
-//#define INP4 "(Par ens (in the) hood)"
-//    
-//    pd_pdf_implementation_use();
-//    char *req[] = {EXP1, EXP2, EXP3, EXP4};
-//    char *buf = ("<< /Par " INP1 " >>\n"
-//                 "<< /Par2 " INP2 " >>\n"
-//                 "<< /Par3 " INP3 " >>\n"
-//                 "<< /Par4 " INP4 " >>\n");
-//    
-//    PDScannerRef scn = PDScannerCreateWithState(pdfRoot);
-//    scn->buf = buf;
-//    scn->fixedBuf = true;
-//    scn->bsize = strlen(buf);
-//    scn->boffset = 0;
-//    pd_stack stack;
-//    
-//    int ix = 4;
-//    for (int i = 0; i < ix; i++) {
-//        XCTAssertTrue(true == PDScannerPopStack(scn, &stack), @"Scanner did not pop a stack as expected.");
-//        PDDictionaryRef d = PDInstanceCreateFromComplex(&stack);
-//        PDDictionaryPrint(d);
-//        PDStringRef s = PDDictionaryGetEntry(d, [i > 0 ? [NSString stringWithFormat:@"Par%d", i+1] : @"Par" PDFString]);
-//        XCTAssertTrue(0 == strcmp(req[i], PDStringEscapedValue(s, true)), @"invalid result: %s", PDStringEscapedValue(s, true));
-//        //        XCTAssertTrue(0 == strcmp(req[i], (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info)), @"invalid result: %s", (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info));
-//        PDRelease(d);
-//        pd_stack_destroy(&stack);
-//    }
-//    
-//    PDRelease(scn);
-//    
-//    pd_pdf_implementation_discard();
-//}
-//
-//- (void)testOpen
-//{
-//    [self configStd];
-//    
-//    long long objects = PDPipeExecute(_pipe);
-//    XCTAssertTrue(objects > -1, @"PDPipeExecute() returned error code");
-//    NSLog(@"objects: %lld", objects);
-//}
-//
-//- (NSString *)bufDesc:(char *)buf len:(PDInteger)len
-//{
-//    char *res = malloc(1 + len * 4);
-//    int j =0;
-//    for (int i = 0; i < len; i++)
-//        if (buf[i] < 32 || buf[i] > 'z') {
-//            j += sprintf(&res[j], "\\%03d", buf[i]);
-//        } else {
-//            res[j++] = buf[i];
-//        }
-//    res[j] = 0;
-//    NSString *str = [NSString stringWithFormat:@"[ %s ] (%ldb)", res, len];
-//    free(res);
-//    return str;
-//}
-//
-//- (void)runSingleFilterTest:(NSString *)name filter:(PDStreamFilterRef)filter
-//{
-//#define BUF_CAP_INIT 16
-//#define BUF_CAP_GROW 8
-//    int buf_cap = BUF_CAP_INIT;
-//    PDInteger len_ns;
-//    char *seg;
-//    
-//    XCTAssertFalse(!PDStreamFilterInit(filter), @"%@ filter init failed", name);
-//    PDStreamFilterPrepare(filter, buf_in, len_in, buf_out, buf_cap);
-//    
-//    len_out = PDStreamFilterBegin(filter);
-//    while (! filter->finished && ! filter->failing) {
-//        buf_cap += BUF_CAP_GROW;
-//        buf_out = realloc(buf_out, buf_cap);
-//        filter->bufOut = (unsigned char *)(buf_out + len_out);
-//        filter->bufOutCapacity += BUF_CAP_GROW;
-//        len_out += PDStreamFilterProceed(filter);
-//    }
-//    XCTAssertFalse(filter->failing, @"%@ Filter is failing!", name);
-//    
-//    XCTAssertTrue(len_out > 0, @"%@ filter returned 0 bytes on process call.", name);
-//    
-//    // reinit filter
-//    XCTAssertTrue(true == PDStreamFilterDone(filter), @"Deinitialization of filter failed");
-//    XCTAssertTrue(true == PDStreamFilterInit(filter), @"(Re)initialization of deinitialized filter failed");
-//    
-//    seg = buf_out;
-//    len_ns = len_out + len_out/2;
-//    if (len_ns < 128) len_ns = 128;
-//    buf_out = malloc(len_ns);
-//    PDStreamFilterPrepare(filter, buf_in, len_in, buf_out, len_ns);
-//    len_ns = PDStreamFilterBegin(filter);
-//    XCTAssertTrue(true == filter->finished, @"Filter did not finish despite being given enough buffer space (1.5*expected output, minimum 128b).");
-//    XCTAssertTrue(false == filter->failing, @"Filter is failing");
-//    XCTAssertEqual(len_ns, len_out, @"Segmented length and non-segmented length do not match up");
-//    XCTAssertTrue(0 == memcmp(seg, buf_out, len_out), @"Memory comparison of segmented vs non-segmented filter results do not match.");
-//    free(seg);
-//    
-//    PDRelease(filter);
-//}
-//
-//- (void)runFilterTest:(NSString *)name filterIn:(PDStreamFilterRef)filterIn filterOut:(PDStreamFilterRef)filterOut string:(char *)string
-//{
-//    // this is zlib compression/decompression without prediction 
-//    char *expect_in;
-//    PDInteger len_x;
-//    
-//    len_x = len_in = strlen(string);
-//    expect_in = malloc(len_in);
-//    buf_in = malloc(len_in);
-//    buf_out = malloc(BUF_CAP_INIT);
-//    
-//    strcpy(expect_in, string); //"Hello, World!@#$%^&*().");  // we expect this on the way back
-//    strcpy(buf_in, expect_in);
-//    
-//    XCTAssertTrue(0 == strcmp(expect_in, buf_in), @"Setup of input / expect buffers is broken.");
-//    
-//    NSLog(@"%@: start = %@", name, [self bufDesc:buf_in len:len_in]);
-//    
-//    [self runSingleFilterTest:[NSString stringWithFormat:@"%@ IN", name] filter:filterIn];
-//    
-//    NSLog(@"%@: out = %@", name, [self bufDesc:buf_out len:len_out]);
-//    
-//    // we don't keep some right answer lying around, although in reality we probably should; for now just check that it decompresses right
-//    
-//    free(buf_in);
-//    len_in = len_out;
-//    buf_in = buf_out;
-//    buf_out = malloc(BUF_CAP_INIT);
-//    
-//    [self runSingleFilterTest:[NSString stringWithFormat:@"%@ OUT", name] filter:filterOut];
-//    
-//    XCTAssertEqual((int)len_out,(int) len_x, @"%@ OUT filter did not come back with same length as it was given", name);
-//    
-//    NSLog(@"%@: back = %@", name, [self bufDesc:buf_out len:len_out]);
-//    
-//    XCTAssertTrue(0 == strncmp(expect_in, buf_out, len_out), @"%@ did not return an identical string as it was given", name);
-//    
-//    free(expect_in);
-//    free(buf_in);
-//    free(buf_out);
-//}
-//
-//- (void)runFilterTest:(NSString *)name filterIn:(PDStreamFilterRef)filterIn filterOut:(PDStreamFilterRef)filterOut
-//{
-//    [self runFilterTest:name filterIn:filterIn filterOut:filterOut string:"Hello, World!@#$%^&*().."];
-//}
-//
-//- (void)testFlateDecode
-//{
-//    [self configStd];
-//    
-//    PDStreamFilterRef zipFilter = PDStreamFilterObtain("FlateDecode", false, NULL);
-//    XCTAssertFalse(NULL == zipFilter, @"FlateDecode (ZIP) filter not found (reader).");
-//    
-//    PDStreamFilterRef unzipFilter = PDStreamFilterObtain("FlateDecode", true, NULL);
-//    XCTAssertFalse(NULL == unzipFilter, @"FlateDecode (UNZIP) filter not found (writer).");
-//    
-//    [self runFilterTest:@"ZIP" filterIn:zipFilter filterOut:unzipFilter];
-//}
-//
-//- (void)testFlateDecodeInverter
-//{
-//    [self configStd];
-//    
-//    PDStreamFilterRef zipFilter = PDStreamFilterObtain("FlateDecode", false, NULL);
-//    XCTAssertFalse(NULL == zipFilter, @"FlateDecode (ZIP) filter not found (reader).");
-//    
-//    PDStreamFilterRef unzipFilter = PDStreamFilterCreateInversionForFilter(zipFilter);
-//    XCTAssertFalse(NULL == unzipFilter, @"Inversion for ZIP is null");
-//    
-//    [self runFilterTest:@"ZIP(inv)" filterIn:zipFilter filterOut:unzipFilter];
-//}
-//
-//- (void)testPredictor
-//{
-//    [self configStd];
-//    
-//    PDDictionaryRef options = [@{@"Columns": @(6), @"Predictor": @(12)} PDValue]; //pd_stack_create_from_definition
-//    //    (PDDef("6", "Columns",
-//    //         "12", "Predictor"));
-//    
-//    PDStreamFilterRef pred = PDStreamFilterObtain("Predictor", false, options);
-//    XCTAssertFalse(NULL == pred, @"Predictor filter not found.");
-//    
-//    options = [@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
-//    //    pd_stack_create_from_definition
-//    //    (PDDef("6", "Columns",
-//    //           "12", "Predictor"));
-//    
-//    PDStreamFilterRef unpred = PDStreamFilterObtain("Predictor", true, options);
-//    XCTAssertFalse(NULL == unpred, @"Unpredictor filter not found.");
-//    
-//    [self runFilterTest:@"Predictor" filterIn:pred filterOut:unpred];
-//}
-//
-//- (void)testPredictorInverter
-//{
-//    [self configStd];
-//    
-//    PDDictionaryRef options = [@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
-//    //    pd_stack_create_from_definition
-//    //    (PDDef("6", "Columns",
-//    //           "12", "Predictor"));
-//    
-//    PDStreamFilterRef pred = PDStreamFilterObtain("Predictor", false, options);
-//    XCTAssertFalse(NULL == pred, @"Predictor filter not found.");
-//    
-//    PDStreamFilterRef unpred = PDStreamFilterCreateInversionForFilter(pred);
-//    XCTAssertFalse(NULL == unpred, @"Unpredictor filter not found.");
-//    
-//    [self runFilterTest:@"Predictor(inv)" filterIn:pred filterOut:unpred];
-//}
-//
-//- (void)testFlateDecodePredictor
-//{
-//    [self configStd];
-//    
-//    // predict + compress
-//    
-//    PDDictionaryRef options = [@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
-//    //    pd_stack options = pd_stack_create_from_definition
-//    //    (PDDef("6", "Columns",
-//    //           "12", "Predictor"));
-//    
-//    PDStreamFilterRef pred = PDStreamFilterObtain("Predictor", false, options);
-//    XCTAssertFalse(NULL == pred, @"Predictor filter not found.");
-//    
-//    options = [@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
-//    //    options = pd_stack_create_from_definition
-//    //    (PDDef("6", "Columns",
-//    //           "12", "Predictor"));
-//    
-//    PDStreamFilterRef unpred = PDStreamFilterObtain("Predictor", true, options);
-//    XCTAssertFalse(NULL == unpred, @"Unpredictor filter not found.");
-//    
-//    
-//    
-//    PDStreamFilterRef flate = PDStreamFilterObtain("FlateDecode", false, NULL);
-//    XCTAssertFalse(NULL == flate, @"Flate filter not found.");
-//    
-//    PDStreamFilterRef deflate = PDStreamFilterObtain("FlateDecode", true, NULL);
-//    XCTAssertFalse(NULL == deflate, @"Deflate filter not found.");
-//    
-//    XCTAssertTrue(NULL == pred->nextFilter, @"Predictor had a non-NULL nextFilter on creation");
-//    XCTAssertTrue(NULL == unpred->nextFilter, @"Unpredictor had a non-NULL nextFilter on creation");
-//    XCTAssertTrue(NULL == flate->nextFilter, @"Flate filter had a non-NULL nextFilter on creation");
-//    XCTAssertTrue(NULL == deflate->nextFilter, @"Deflate filter had a non-NULL nextFilter on creation");
-//    
-//    pred->nextFilter = flate;
-//    deflate->nextFilter = unpred;
-//    
-//    [self runFilterTest:@"FlateDecode+Predictor" filterIn:pred filterOut:deflate];
-//#if 0    
-//    char *expect_in, *buf_in, *buf_out;
-//    int len_in, len_out;
-//    
-//    expect_in = malloc(128);
-//    buf_in = malloc(128);
-//    buf_out = malloc(128);
-//    
-//    strcpy(expect_in, 
-//           "Hello,"
-//           " World"
-//           "!@#$%^"
-//           "&*()..");  // we expect this on the way back
-//    strcpy(buf_in, expect_in);
-//    
-//    XCTAssertTrue(0 == strcmp(expect_in, buf_in), @"Setup of input / expect buffers is broken.");
-//    len_in = strlen(buf_in);
-//    
-//    XCTAssertFalse(!PDStreamFilterInit(pred), @"Prediction filter init failed");
-//    PDStreamFilterPrepare(pred, buf_in, len_in, buf_out, 128);
-//    
-//    NSLog(@"Pred: start = %@", [self bufDesc:buf_in len:len_in]);
-//    
-//    len_out = PDStreamFilterBegin(pred);
-//    
-//    XCTAssertTrue(len_out > 0, @"Pred filter returned 0 bytes on process call.");
-//    PDRelease(pred);
-//    
-//    NSLog(@"Pred: out = %@", [self bufDesc:buf_out len:len_out]);
-//    
-//    // we don't keep some right answer lying around, although in reality we probably should; for now just check that it decompresses right
-//    
-//    XCTAssertFalse(!PDStreamFilterInit(deflate), @"Unprediction filter init failed");
-//    PDStreamFilterPrepare(deflate, buf_out, len_out, buf_in, len_in);
-//    
-//    XCTAssertEquals((int)len_in, (int)PDStreamFilterBegin(deflate), @"Deflate filter did not come back with same length as it was given");
-//    
-//    NSLog(@"Pred: back = %@", [self bufDesc:buf_in len:len_in]);
-//    
-//    XCTAssertTrue(0 == strcmp(expect_in, buf_in), @"Deflate did not return an identical string as it was given");
-//    PDRelease(deflate);
-//    
-//    free(expect_in);
-//    free(buf_in);
-//    free(buf_out);
-//#endif
-//}
-//
-//- (void)testFlateDecodePredictorInversion
-//{
-//    [self configStd];
-//    
-//    // predict + compress
-//    
-//    PDDictionaryRef options = [@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
-//    //    pd_stack options = pd_stack_create_from_definition
-//    //    (PDDef("6", "Columns",
-//    //           "12", "Predictor"));
-//    
-//    PDStreamFilterRef pred = PDStreamFilterObtain("Predictor", false, options);
-//    XCTAssertFalse(NULL == pred, @"Predictor filter not found.");
-//    
-//    PDStreamFilterRef flate = PDStreamFilterObtain("FlateDecode", false, NULL);
-//    XCTAssertFalse(NULL == flate, @"Flate filter not found.");
-//    
-//    
-//    
-//    XCTAssertTrue(NULL == pred->nextFilter, @"Predictor had a non-NULL nextFilter on creation");
-//    XCTAssertTrue(NULL == flate->nextFilter, @"Flate filter had a non-NULL nextFilter on creation");
-//    
-//    pred->nextFilter = flate;
-//    
-//    PDStreamFilterRef deflate = PDStreamFilterCreateInversionForFilter(pred);
-//    
-//    [self runFilterTest:@"FlateDecode+Predictor(inv)" filterIn:pred filterOut:deflate];
-//}
-//
-//- (void)testFlateDecodePredictorInversionMultipass
-//{
-//    [self configStd];
-//    
-//    // predict + compress
-//    
-//    PDDictionaryRef options = [@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
-//    //    pd_stack options = pd_stack_create_from_definition
-//    //    (PDDef("6", "Columns",
-//    //           "12", "Predictor"));
-//    
-//    PDStreamFilterRef pred = PDStreamFilterObtain("Predictor", false, options);
-//    XCTAssertFalse(NULL == pred, @"Predictor filter not found.");
-//    
-//    PDStreamFilterRef flate = PDStreamFilterObtain("FlateDecode", false, NULL);
-//    XCTAssertFalse(NULL == flate, @"Flate filter not found.");
-//    
-//    
-//    
-//    XCTAssertTrue(NULL == pred->nextFilter, @"Predictor had a non-NULL nextFilter on creation");
-//    XCTAssertTrue(NULL == flate->nextFilter, @"Flate filter had a non-NULL nextFilter on creation");
-//    
-//    pred->nextFilter = flate;
-//    
-//    PDStreamFilterRef deflate = PDStreamFilterCreateInversionForFilter(pred);
-//    
-//    [self runFilterTest:@"FlateDecode+Predictor(inv)" filterIn:pred filterOut:deflate string:"012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345012345"];
-//}
-//
-//PDTaskResult taskTestFunc(PDPipeRef pipe, PDTaskRef task, PDObjectRef object, void *info)
-//{
-//    return PDTaskDone;
-//}
-//
-//- (void)testFilter
-//{
-//    [self configStd];
-//    
-//    PDTaskRef filter, task;
-//    filter = PDTaskCreateFilter(PDPropertyRootObject);
-//    task = PDTaskCreateMutator(taskTestFunc);
-//    PDTaskAppendTask(filter, task);
-//    PDPipeAddTask(_pipe, filter);
-//    
-//    PDRelease(filter);
-//    PDRelease(task);
-//    
-//    XCTAssertTrue(-1 < PDPipeExecute(_pipe), @"PDPipeExecute() returned error code");
-//}
-//
-//- (void)testBlockTask
-//{
-//    [self configStd];
-//    
-//    PDTaskRef task;
-//    task = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
-//        return PDTaskDone;
-//    });
-//    
-//    PDPipeAddTask(_pipe, task);
-//    
-//    PDRelease(task);
-//    
-//    XCTAssertTrue(-1 < PDPipeExecute(_pipe), @"PDPipeExecute() returned error code");
-//}
-//
-//- (void)testSinglePageCopying
-//{
-//    [self configStd];
-//    
-//    PDPipeRef pipe2 = _pipe;
-//    _pipe = NULL;
-//    NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"Skycatch_v3.infinite" ofType:@"pdf"];
-//    
-//    [self configIn:file_in andOut:@"/dev/null"];
-//    
-//    PDPageRef page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
-//    XCTAssertNotNull(page, @"page creation failure");
-//    PDPageRef impPage = PDPageInsertIntoPipe(page, pipe2, 3);
-//    XCTAssertNotNull(impPage, @"page import failure");
-//    PDRelease(page);
-//    
-//    PDPipeExecute(pipe2);
-//    PDPipeExecute(_pipe);
-//    
-//    PDRelease(pipe2);
-//}
-//
-//- (void)testSinglePageAppending
-//{
-//    [self configStd];
-//    
-//    PDPipeRef pipe2 = _pipe;
-//    _pipe = NULL;
-//    NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"Skycatch_v3.infinite" ofType:@"pdf"];
-//    
-//    [self configIn:file_in andOut:@"/dev/null"];
-//    
-//    NSInteger count = PDCatalogGetPageCount(PDParserGetCatalog(PDPipeGetParser(pipe2)));
-//    
-//    PDPageRef page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
-//    XCTAssertNotNull(page, @"page creation failure");
-//    PDPageRef impPage = PDPageInsertIntoPipe(page, pipe2, 4);
-//    XCTAssertNotNull(impPage, @"page import failure");
-//    
-//    PDRelease(page);
-//    PDPipeExecute(pipe2);
-//    PDPipeExecute(_pipe);
-//    
-//    PDRelease(pipe2);
-//    
-//    [self configStdVerify];
-//    
-//    NSInteger count2 = PDCatalogGetPageCount(PDParserGetCatalog(PDPipeGetParser(_pipe)));
-//    
-//    XCTAssert(count2 == count + 1, @"Count was not updated correctly.");
-//    
-//}
-//
-//- (void)testMultiPageCopying
-//{
-//    [self configStd];
-//    
-//    PDPipeRef pipe2 = _pipe;
-//    _pipe = NULL;
-//    NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"Skycatch_v3.infinite" ofType:@"pdf"];
-//    
-//    [self configIn:file_in andOut:@"/dev/null"];
-//    
-//    PDPageRef page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
-//    XCTAssertNotNull(page, @"page creation failure");
-//    PDPageRef impPage = PDPageInsertIntoPipe(page, pipe2, 3);
-//    XCTAssertNotNull(impPage, @"page import failure");
-//    
-//    PDPageRef page2 = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 3);
-//    XCTAssertNotNull(page2, @"page creation failure");
-//    PDPageRef impPage2 = PDPageInsertIntoPipe(page2, pipe2, 4);
-//    XCTAssertNotNull(impPage2, @"page import failure");
-//    
-//    PDRelease(page);
-//    PDRelease(page2);
-//    
-//    PDPipeExecute(pipe2);
-//    PDPipeExecute(_pipe);
-//    
-//    PDRelease(pipe2);
-//}
-//
-//- (void)testMultiPageAppending
-//{
-//    [self configStd];
-//    
-//    PDPipeRef pipe2 = _pipe;
-//    _pipe = NULL;
-//    NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"Skycatch_v3.infinite" ofType:@"pdf"];
-//    
-//    [self configIn:file_in andOut:@"/dev/null"];
-//    
-//    PDPageRef page = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 2);
-//    XCTAssertNotNull(page, @"page creation failure");
-//    PDPageRef impPage = PDPageInsertIntoPipe(page, pipe2, 3);
-//    XCTAssertNotNull(impPage, @"page import failure");
-//    
-//    PDPageRef page2 = PDPageCreateForPageWithNumber(PDPipeGetParser(_pipe), 3);
-//    XCTAssertNotNull(page2, @"page creation failure");
-//    PDPageRef impPage2 = PDPageInsertIntoPipe(page2, pipe2, 5);
-//    XCTAssertNotNull(impPage2, @"page import failure");
-//    
-//    PDRelease(page);
-//    PDRelease(page2);
-//    
-//    PDPipeExecute(pipe2);
-//    PDPipeExecute(_pipe);
-//    
-//    PDRelease(pipe2);
-//}
-//
-//- (void)runSet:(NSArray *)set inPath:(NSString *)path moveInfsTo:(NSString *)infPath code:(void (^)(NSString *pdf, NSString *path, NSString *out1, NSString *out2))code
-//{
-//    NSFileManager *fm = [NSFileManager defaultManager];
-//    
-//    if (code == NULL) code = ^(NSString *pdf, NSString *path, NSString *out1, NSString *out2) {
-//        XCTAssertTrue([fm fileExistsAtPath:[path stringByAppendingString:pdf]], @"PDF not found in filesystem!");
-//        [self configIn:[path stringByAppendingString:pdf] andOut:out1];
-//        PDPipeExecute(_pipe);
-//        //        PDRelease(_pipe);
-//        XCTAssertTrue([fm fileExistsAtPath:out1], @"Pajdeg original failure %@", pdf);
-//        NSLog(@"*** PAJDEG RECIPE TEST %@ *** ", pdf);
-//        [self configIn:out1 andOut:out2];
-//        PDPipeExecute(_pipe);
-//        PDRelease(_pipe);
-//        _pipe = nil;
-//        XCTAssertTrue([fm fileExistsAtPath:out2], @"Pajdeg internal failure %@", pdf);
-//    };
-//    
-//    NSString *out1 = [NSTemporaryDirectory() stringByAppendingString:@"/out1.pdf"];
-//    NSString *out2 = [NSTemporaryDirectory() stringByAppendingString:@"/out2.pdf"];
-//    for (NSString *pdf in set) {
-//        //if (! [pdf hasPrefix:@"Tactics of Persuasion"]) continue;
-//        if ([[[pdf pathExtension] lowercaseString] isEqualToString:@"pdf"]) {
-//            NSLog(@"*** PAJDEG ORIG TEST %@ *** ", pdf);
-//            if ([[pdf lowercaseString] hasSuffix:@".infinite.pdf"]) {
-//                // *SLAP*
-//                [fm removeItemAtPath:[infPath stringByAppendingString:pdf] error:NULL];
-//                [fm moveItemAtPath:[path stringByAppendingString:pdf] toPath:[infPath stringByAppendingString:pdf] error:NULL];
-//            } else {
-//                code(pdf, path, out1, out2);
-//            }
-//        }
-//    }
-//}
-//
 //- (void)testCatalogCreation
 //{
 //    // catalog generation would break Fate Accel
@@ -1036,133 +1341,3 @@ SpecEnd
 //        _pipe = nil;
 //    }
 //}
-//
-//- (void)testTestPDFSet
-//{
-//    NSArray *set = @[@"Capture.pdf", @"Chinese_traditional.pdf", @"Japanese.pdf", @"PDF13.pdf", @"PDF15.pdf", @"Tagged.pdf", @"Untagged.pdf", @"Chinese_simplified.pdf", @"Forms.pdf", @"Korean.pdf", @"PDF14.pdf", @"PDF16.pdf", @"TouchUp.pdf"];
-//    NSString *path = [[NSBundle bundleForClass:self.class] pathForResource:@"Capture" ofType:@"pdf"];
-//    path = [path substringToIndex:path.length - strlen("Capture.pdf")];
-//    [self runSet:set inPath:path moveInfsTo:NSTemporaryDirectory() code:NULL];
-//}
-//
-//- (void (^)(NSString *pdf, NSString *path, NSString *out1, NSString *out2))catalogBlock
-//{
-//    NSFileManager *fm = [NSFileManager defaultManager];
-//    return [^(NSString *pdf, NSString *path, NSString *out1, NSString *out2) {
-//        [self configIn:[path stringByAppendingString:pdf] andOut:out1];
-//        if (NULL == PDPipeGetParser(_pipe)) {
-//            XCTFail(@"NULL pipe in PDF test for %@", pdf);
-//            return;
-//        }
-//        
-//        PDCatalogRef catalog = PDParserGetCatalog(PDPipeGetParser(_pipe));
-//        NSInteger pageCount = PDCatalogGetPageCount(catalog);
-//        __block NSInteger pagesSeen = 0;
-//        __block NSInteger pagesSeen2 = 0;
-//        __block NSInteger pagesInObStreams = 0;
-//        __block NSInteger *pageIDs = malloc(sizeof(NSInteger) * pageCount);
-//        
-//        __block NSInteger *pageIDs2 = malloc(sizeof(NSInteger) * pageCount);
-//        PDTaskRef pageBlock2 = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
-//            PDInteger obid = PDObjectGetObID(object);
-//            pagesInObStreams += PDObjectGetObStreamFlag(object) == true;
-//            BOOL found = NO;
-//            for (NSInteger i = 0; i < pageCount; i++) {
-//                if (pageIDs2[i] == obid) {
-//                    pageIDs2[i] = -pageIDs[i];
-//                    found = YES;
-//                    break;
-//                }
-//                if (pageIDs2[i] == -obid) {
-//                    // duplicate!
-//                    XCTFail(@"duplicate entry for page %ld (id %ld)!", (long)i, (long)obid);
-//                    found = YES;
-//                    break;
-//                }
-//            }
-//            XCTAssertTrue(found, @"Page with object ID=%ld was not found", (long)obid);
-//            pagesSeen2++;
-//            return PDTaskDone;
-//        });
-//        
-//        PDTaskRef pageFilter;
-//        for (NSInteger i = 0; i < pageCount; i++) {
-//            pageIDs[i] = pageIDs2[i] = PDCatalogGetObjectIDForPage(catalog, i+1);
-//            pageFilter = PDTaskCreateFilterWithValue(PDPropertyPage, i+1);
-//            PDTaskAppendTask(pageFilter, pageBlock2);
-//            PDPipeAddTask(_pipe, pageFilter);
-//            PDRelease(pageFilter);
-//        }
-//        pageFilter = PDTaskCreateFilterWithValue(PDPropertyPDFType, PDFTypePage);
-//        PDTaskRef pageBlock = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
-//            PDInteger obid = PDObjectGetObID(object);
-//            BOOL found = NO;
-//            for (NSInteger i = 0; i < pageCount; i++) {
-//                if (pageIDs[i] == obid) {
-//                    pageIDs[i] = -pageIDs[i];
-//                    found = YES;
-//                    break;
-//                }
-//                if (pageIDs[i] == -obid) {
-//                    // duplicate!
-//                    XCTFail(@"duplicate page %@::%ld (i=%ld)!", pdf, (long)obid, (long)i);
-//                    found = YES;
-//                    break;
-//                }
-//            }
-//            //            XCTAssertTrue(found, @"Page %@::<#%ld> not found", pdf, (long)obid);
-//            pagesSeen += found;
-//            return PDTaskDone;
-//        });
-//        PDTaskAppendTask(pageFilter, pageBlock);
-//        PDPipeAddTask(_pipe, pageFilter);
-//        PDRelease(pageBlock);
-//        PDRelease(pageFilter);
-//        
-//        PDPipeExecute(_pipe);
-//        PDRelease(_pipe);
-//        _pipe = nil;
-//        XCTAssertTrue([fm fileExistsAtPath:out1], @"Pajdeg original failure %@", pdf);
-//        
-//        XCTAssertEqual(pageCount, pagesSeen + pagesInObStreams, @"%@: Not all pages were passed to the PDF TYPE block.", pdf);
-//        XCTAssertEqual(pageCount, pagesSeen2, @"%@: Not all pages were passed to the PAGES block.", pdf);
-//        
-//        /*NSLog(@"*** PAJDEG RECIPE TEST %@ *** ", pdf);
-//         [self configIn:out1 andOut:out2];
-//         PDPipeExecute(_pipe);
-//         PDRelease(_pipe);
-//         XCTAssertTrue([fm fileExistsAtPath:out2], @"Pajdeg internal failure %@", pdf);*/
-//        free(pageIDs);
-//        free(pageIDs2);
-//    } copy];
-//}
-//
-////#ifdef TEST_PAJDEG_FULL
-//
-//- (void)testFull
-//{
-//    NSLog(@"*** ABOUT TO PERFORM FULL PAJDEG TESTS -- THIS IS MEMORY AND TIME INTENSIVE ***");
-//    NSFileManager *fm = [NSFileManager defaultManager];
-//    
-//    NSString *path = PAJDEG_PDFS;
-//    NSString *infPath = [NSString stringWithFormat:@"/Users/%@/Workspace/pajdeg-inf-pdfs/", NSUserName()];
-//    NSArray *pdfs = [fm contentsOfDirectoryAtPath:path error:NULL];
-//    [self runSet:pdfs inPath:path moveInfsTo:infPath code:NULL];
-//}
-//
-//- (void)testCatalogFull
-//{
-//    NSLog(@"*** ABOUT TO PERFORM FULL PAJDEG TESTS (CATALOG) -- THIS IS MEMORY AND TIME INTENSIVE ***");
-//    NSFileManager *fm = [NSFileManager defaultManager];
-//    
-//    NSString *path = PAJDEG_PDFS;
-//    NSString *infPath = [NSString stringWithFormat:@"/Users/%@/Workspace/pajdeg-inf-pdfs/", NSUserName()];
-//    NSArray *pdfs = [fm contentsOfDirectoryAtPath:path error:NULL];
-//    [self runSet:pdfs inPath:path moveInfsTo:infPath code:[self catalogBlock]];
-//}
-//
-////#endif // TEST_PAJDEG_FULL
-//
-//#endif // TEST_PAJDEG
-//
-//@end

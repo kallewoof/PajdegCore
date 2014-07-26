@@ -1,9 +1,9 @@
 # pajdeg
 
-[![CI Status](http://img.shields.io/travis/kallewoof/PajdegPod.svg?style=flat)](https://travis-ci.org/kallewoof/PajdegPod)
-[![Version](https://img.shields.io/cocoapods/v/pajdeg.svg?style=flat)](http://cocoadocs.org/docsets/pajdeg)
-[![License](https://img.shields.io/cocoapods/l/pajdeg.svg?style=flat)](http://cocoadocs.org/docsets/pajdeg)
-[![Platform](https://img.shields.io/cocoapods/p/pajdeg.svg?style=flat)](http://cocoadocs.org/docsets/pajdeg)
+[![CI Status](http://img.shields.io/travis/kallewoof/PajdegCore.svg?style=flat)](https://travis-ci.org/kallewoof/PajdegCore)
+[![Version](https://img.shields.io/cocoapods/v/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
+[![License](https://img.shields.io/cocoapods/l/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
+[![Platform](https://img.shields.io/cocoapods/p/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
 
 ## Usage
 
@@ -13,10 +13,14 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 ## Installation
 
-pajdeg is available through [CocoaPods](http://cocoapods.org). To install
+Pajdeg is available through [CocoaPods](http://cocoapods.org). To install
 it, simply add the following line to your Podfile:
 
-    pod "pajdeg"
+    pod "PajdegCore"
+
+Note that this is the core C library. You probably want the Objective-C wrapper, which is available via
+
+    pod "Pajdeg"
 
 ## Author
 
@@ -24,5 +28,5 @@ Karl-Johan Alm, kalle.alm@gmail.com
 
 ## License
 
-pajdeg is available under the MIT license. See the LICENSE file for more info.
+Pajdeg is available under the MIT license. See the LICENSE file for more info.
 

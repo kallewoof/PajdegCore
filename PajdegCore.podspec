@@ -29,7 +29,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Pod/Source/src/'
   #s.resources = 'Pod/Assets/*.png'
 
-  # s.public_header_files = 'Pod/Classes/**/*.h'
+  s.public_header_files = 'Pod/Source/src/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
   # s.dependency 'AFNetworking', '~> 2.3'
 end
