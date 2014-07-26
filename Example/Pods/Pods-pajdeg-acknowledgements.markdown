@@ -1,7 +1,7 @@
 # Acknowledgements
 This application makes use of the following third party libraries:
 
-## pajdeg
+## PajdegCore
 
 Copyright (c) 2014 Kalle Alm <kalle.alm@gmail.com>
 

@@ -6,9 +6,9 @@
 // project.
 
 
-// pajdeg
-#define COCOAPODS_POD_AVAILABLE_pajdeg
-#define COCOAPODS_VERSION_MAJOR_pajdeg 0
-#define COCOAPODS_VERSION_MINOR_pajdeg 1
-#define COCOAPODS_VERSION_PATCH_pajdeg 0
+// PajdegCore
+#define COCOAPODS_POD_AVAILABLE_PajdegCore
+#define COCOAPODS_VERSION_MAJOR_PajdegCore 0
+#define COCOAPODS_VERSION_MINOR_PajdegCore 0
+#define COCOAPODS_VERSION_PATCH_PajdegCore 3
 
