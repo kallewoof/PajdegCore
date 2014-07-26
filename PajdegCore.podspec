@@ -9,18 +9,18 @@
 
 Pod::Spec.new do |s|
   s.name             = "PajdegCore"
-  s.version          = "0.0.1"
+  s.version          = "0.0.2"
   s.summary          = "C library for mutating PDFs"
   s.description      = <<-DESC
   Pajdeg is a self-contained C library for mutating (modifying) PDFs. 
   
   It's built around the principles of a pipe, where the original PDF is examined, needed changes are determined and tasks are "attached" based on page number, object ID, etc. and then simply sent through a pipe into a new PDF with the desired modifications. 
                        DESC
-  s.homepage         = "https://github.com/kallewoof/pajdeg"
+  s.homepage         = "https://github.com/kallewoof/PajdegCore"
   # s.screenshots     = "www.example.com/screenshots_1", "www.example.com/screenshots_2"
   s.license          = 'MIT'
   s.author           = { "Karl-Johan Alm" => "kalle.alm@gmail.com" }
-  s.source           = { :git => "https://github.com/kallewoof/PajdegPod.git", :tag => s.version.to_s }
+  s.source           = { :git => "https://github.com/kallewoof/PajdegCore.git", :tag => s.version.to_s, :submodules => true }
   s.social_media_url = 'https://twitter.com/kallewoof'
 
   #s.platform     = :ios, '7.0'
@@ -28,6 +28,8 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Pod/Source/src/'
   #s.resources = 'Pod/Assets/*.png'
+  
+  s.xcconfig = { 'OTHER_LDFLAGS' => '-l z.1' }
 
   s.public_header_files = 'Pod/Source/src/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
