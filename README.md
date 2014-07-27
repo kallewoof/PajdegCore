@@ -1,9 +1,11 @@
-# pajdeg
+# Pajdeg
 
 [![CI Status](http://img.shields.io/travis/kallewoof/PajdegCore.svg?style=flat)](https://travis-ci.org/kallewoof/PajdegCore)
 [![Version](https://img.shields.io/cocoapods/v/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
 [![License](https://img.shields.io/cocoapods/l/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
 [![Platform](https://img.shields.io/cocoapods/p/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
+
+This is a simple wrapper repository, around the C library at https://github.com/kallewoof/pajdeg
 
 ## Usage
 
