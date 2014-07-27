@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/cocoapods/l/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
 [![Platform](https://img.shields.io/cocoapods/p/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
 
-This is a simple wrapper repository, around the C library at https://github.com/kallewoof/pajdeg
+This repository is a CocoaPods wrapper around the C library at https://github.com/kallewoof/pajdeg
 
 ## Usage
 
