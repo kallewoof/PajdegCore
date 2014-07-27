@@ -22,7 +22,7 @@ it, simply add the following line to your Podfile:
 
 Note that this is the core C library. You probably want the Objective-C wrapper, which is available via
 
-    pod "Pajdeg"
+    pod "PajdegPDF"
 
 ## Author
 
