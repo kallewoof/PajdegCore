@@ -1,9 +1,9 @@
 # Pajdeg
 
 [![CI Status](http://img.shields.io/travis/kallewoof/PajdegCore.svg?style=flat)](https://travis-ci.org/kallewoof/PajdegCore)
-[![Version](https://img.shields.io/cocoapods/v/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
-[![License](https://img.shields.io/cocoapods/l/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
-[![Platform](https://img.shields.io/cocoapods/p/PajdegCore.svg?style=flat)](http://cocoadocs.org/docsets/PajdegCore)
+[![Version](https://img.shields.io/cocoapods/v/PajdegCore.svg?style=flat)](http://kallewoof.github.io/pajdeg/)
+[![License](https://img.shields.io/cocoapods/l/PajdegCore.svg?style=flat)](http://kallewoof.github.io/pajdeg/)
+[![Platform](https://img.shields.io/cocoapods/p/PajdegCore.svg?style=flat)](http://kallewoof.github.io/pajdeg/)
 
 This repository is a CocoaPods wrapper around the C library at https://github.com/kallewoof/pajdeg
 
