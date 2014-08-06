@@ -26,7 +26,7 @@ Note that this is the core C library. You probably want the Objective-C wrapper,
 
 ## Author
 
-Kalle Alm, my name with dots at gmail.
+Kalle Alm (with dots at gmail).
 
 ## License
 
