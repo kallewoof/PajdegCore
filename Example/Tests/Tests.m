@@ -19,6 +19,7 @@
 #include "PDString.h"
 #include "PDDictionary.h"
 #include "PDNumber.h"
+#import <XCTest/XCTest.h>
 
 #define PIPE_FILE_IN_BASE  @"test123"
 #define PIPE_FILE_OUT_BASE @"test123_out"
@@ -53,11 +54,14 @@ void (^configIn)(NSString *file_in, NSString *file_out) = ^(NSString *file_in, N
         PDRelease(_pipe);
     }
     
-    XCTAssertNotNil(file_in, @"input file not found in bundle");
-    XCTAssertNotNil(file_out, @"output file path creation failure");
+    expect(file_in).toNot.beNil();
+    expect(file_out).toNot.beNil();
+//    XCTAssertNotNil(file_in, @"input file not found in bundle");
+//    XCTAssertNotNil(file_out, @"output file path creation failure");
     
     _fm = [NSFileManager defaultManager];
-    XCTAssertTrue([_fm fileExistsAtPath:file_in], @"input file not found: %@", file_in);
+    expect([_fm fileExistsAtPath:file_in]).to.beTruthy();
+//    XCTAssertTrue([_fm fileExistsAtPath:file_in], @"input file not found: %@", file_in);
     [_fm createDirectoryAtPath:NSTemporaryDirectory() withIntermediateDirectories:YES attributes:nil error:nil];
     [_fm removeItemAtPath:file_out error:NULL];
 
@@ -413,7 +417,8 @@ describe(@"scanner nested parentheses", ^{
     it(@"should parse parens validly", ^{
         
         for (int i = 0; i < ix; i++) {
-            XCTAssertTrue(true == PDScannerPopStack(scn, &stack), @"Scanner did not pop a stack as expected.");
+            expect(PDScannerPopStack(scn, &stack)).to.beTruthy();
+//            XCTAssertTrue(true == PDScannerPopStack(scn, &stack), @"Scanner did not pop a stack as expected.");
             PDDictionaryRef d = PDInstanceCreateFromComplex(&stack);
             PDDictionaryPrint(d);
             PDStringRef s = PDDictionaryGetEntry(d, [i > 0 ? [NSString stringWithFormat:@"Par%d", i+1] : @"Par" UTF8String]);

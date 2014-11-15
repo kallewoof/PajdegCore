@@ -16,7 +16,7 @@
 #define COCOAPODS_POD_AVAILABLE_PajdegCore
 #define COCOAPODS_VERSION_MAJOR_PajdegCore 0
 #define COCOAPODS_VERSION_MINOR_PajdegCore 0
-#define COCOAPODS_VERSION_PATCH_PajdegCore 4
+#define COCOAPODS_VERSION_PATCH_PajdegCore 5
 
 // Specta
 #define COCOAPODS_POD_AVAILABLE_Specta
