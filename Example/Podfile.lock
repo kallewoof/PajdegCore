@@ -1,6 +1,6 @@
 PODS:
   - Expecta (0.3.1)
-  - PajdegCore (0.0.5)
+  - PajdegCore (0.1.0)
   - Specta (0.2.1)
 
 DEPENDENCIES:
@@ -14,7 +14,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
-  PajdegCore: d257a3a454365d6141270a6918489c43c9dea7a0
+  PajdegCore: 220c9343cc9725eabdb5dcfa88207e56d66ee4cf
   Specta: 9141310f46b1f68b676650ff2854e1ed0b74163a
 
-COCOAPODS: 0.33.1
+COCOAPODS: 0.34.4
