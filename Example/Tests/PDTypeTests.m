@@ -18,6 +18,91 @@
 #import "pd_internal.h"
 #import "pd_stack.h"
 
+BOOL dictObjsEqual(const char *a, const char *b)
+{
+    // we may, or may not, have a foo bar obj\n part preceding
+    int i, j;
+    if (2 == sscanf(a, "%d %d obj\n", &i, &j) &&
+        2 == sscanf(b, "%d %d obj\n", &i, &j)) {
+        while (a[0] != '\n') a++;
+        while (b[0] != '\n') b++;
+        a++;
+        b++;
+    }
+    
+    if (a[0] == '<' && b[0] == '<') { a++; b++; }
+    if (a[0] == '<' && b[0] == '<') { a++; b++; }
+    while (a[0] == ' ') a++;
+    while (b[0] == ' ') b++;
+    
+    unsigned long la = strlen(a);
+    unsigned long lb = strlen(b);
+    char *A = strdup(a);
+    char *B = strdup(b);
+    if (A[la-1] == '\n' || A[la-1] == ' ' || A[la-1] == '\r') A[--la] = 0;
+    if (B[lb-1] == '\n' || B[lb-1] == ' ' || B[lb-1] == '\r') B[--lb] = 0;
+    if (A[la-1] == '>' && B[lb-1] == '>') { A[--la] = 0; B[--lb] = 0; }
+    if (A[la-1] == '>' && B[lb-1] == '>') { A[--la] = 0; B[--lb] = 0; }
+    
+    NSCharacterSet *cs = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+    NSArray *aa = [[[NSString stringWithUTF8String:A] stringByTrimmingCharactersInSet:cs] componentsSeparatedByString:@"/"];
+    NSArray *ab = [[[NSString stringWithUTF8String:A] stringByTrimmingCharactersInSet:cs] componentsSeparatedByString:@"/"];
+    free(A);
+    free(B);
+    
+    // they should have same count
+    if (aa.count != ab.count) return NO;
+    
+    // make nsdicts
+    NSMutableDictionary *da = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *db = [[NSMutableDictionary alloc] init];
+    BOOL first = YES;
+    BOOL key = NO;
+    NSString *ks = nil;
+    for (NSString *s in aa) {
+        if (first) {
+            first = NO;
+        } else {
+            key = !key;
+            if (key) {
+                ks = [s stringByTrimmingCharactersInSet:cs];
+                NSArray *comps = [ks componentsSeparatedByString:@" "];
+                if (comps.count > 1) {
+                    ks = comps[0];
+                    da[ks] = [[[comps subarrayWithRange:(NSRange){1, comps.count-1}] componentsJoinedByString:@" "] stringByTrimmingCharactersInSet:cs];
+                    key = NO;
+                }
+            } else {
+                da[ks] = [s stringByTrimmingCharactersInSet:cs];
+            }
+        }
+    }
+    
+    first = YES;
+    key = NO;
+    ks = nil;
+    for (NSString *s in ab) {
+        if (first) {
+            first = NO;
+        } else {
+            key = !key;
+            if (key) {
+                ks = [s stringByTrimmingCharactersInSet:cs];
+                NSArray *comps = [ks componentsSeparatedByString:@" "];
+                if (comps.count > 1) {
+                    ks = comps[0];
+                    db[ks] = [[[comps subarrayWithRange:(NSRange){1, comps.count-1}] componentsJoinedByString:@" "] stringByTrimmingCharactersInSet:cs];
+                    key = NO;
+                }
+            } else {
+                db[ks] = [s stringByTrimmingCharactersInSet:cs];
+            }
+        }
+    }
+    
+    return [da isEqualToDictionary:db];
+}
+
 SpecBegin(PDTypeTests)
 
 pd_pdf_implementation_use();
@@ -51,7 +136,7 @@ describe(@"replacing objects", ^{
 
     it(@"should update object ref correctly", ^{
         // set /Key2 to self -- should swap 3 0 R to 1 0 R
-        PDDictionarySetEntry(dict, "Key2", ob);
+        PDDictionarySet(dict, "Key2", ob);
         
         len = PDObjectGenerateDefinition(ob, &buf, bufcap);
         buf[len] = 0;
@@ -62,13 +147,14 @@ describe(@"replacing objects", ^{
     it(@"should add object ref correctly", ^{
         // set new /Key3 to 5 0 R
         PDReferenceRef ref = PDReferenceCreate(5, 0);
-        PDDictionarySetEntry(dict, "Key3", ref);
+        PDDictionarySet(dict, "Key3", ref);
         PDRelease(ref);
         
         len = PDObjectGenerateDefinition(ob, &buf, bufcap);
         buf[len] = 0;
         
-        expect(strcmp(buf, "1 0 obj\n<< /Key /Value /Key2 1 0 R /Key3 5 0 R >>\n")).to.equal(0);
+        expect(dictObjsEqual(buf, "1 0 obj\n<< /Key /Value /Key2 3 0 R >>\n")).to.beTruthy();
+//        expect(strcmp(buf, "1 0 obj\n<< /Key /Value /Key2 1 0 R /Key3 5 0 R >>\n")).to.equal(0);
     });
     
     it(@"should replace ob ref with given array of ob refs", ^{
@@ -78,13 +164,13 @@ describe(@"replacing objects", ^{
         PDArrayAppend(arr, ob);
         PDArrayAppend(arr, ref);
         PDRelease(ref);
-        PDDictionarySetEntry(dict, "Key3", arr);
+        PDDictionarySet(dict, "Key3", arr);
         PDRelease(arr);
         
         len = PDObjectGenerateDefinition(ob, &buf, bufcap);
         buf[len] = 0;
         
-        expect(strcmp(buf, "1 0 obj\n<< /Key /Value /Key2 1 0 R /Key3 [ 1 0 R 5 0 R ] >>\n")).to.equal(0);
+        expect(dictObjsEqual(buf, "1 0 obj\n<< /Key /Value /Key2 1 0 R /Key3 [ 1 0 R 5 0 R ] >>\n")).to.beTruthy();
     });
 });
 

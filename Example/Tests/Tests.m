@@ -279,27 +279,27 @@ describe(@"object dicts", ^{
     });
 
     it(@"should have the appropriate entries", ^{
-        num = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Foo");
+        num = PDDictionaryGet(PDObjectGetDictionary(object), "Foo");
         expect(num).toNot.beNil();
         expect(PDNumberGetInteger(num)).to.equal(1);
-        num = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Bar");
+        num = PDDictionaryGet(PDObjectGetDictionary(object), "Bar");
         expect(num).toNot.beNil();
         expect(PDNumberGetInteger(num)).to.equal(2);
     });
 
     it(@"should delete correctly", ^{
         
-        PDDictionaryDeleteEntry(PDObjectGetDictionary(object), "Bar");
+        PDDictionaryDelete(PDObjectGetDictionary(object), "Bar");
         expect(PDDictionaryGetCount(PDObjectGetDictionary(object))).to.equal(1);
-        num = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Foo");
+        num = PDDictionaryGet(PDObjectGetDictionary(object), "Foo");
         expect(num).toNot.beNil();
         expect(PDNumberGetInteger(num)).to.equal(1);
-        num = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Bar");
+        num = PDDictionaryGet(PDObjectGetDictionary(object), "Bar");
         expect(num).to.beNil();
         
     });
         
-    /*PDDictionarySetEntry(PDObjectGetDictionary(object), "Zoo", [@[@(1),@(2),@(3)] PDValue]);
+    /*PDDictionarySet(PDObjectGetDictionary(object), "Zoo", [@[@(1),@(2),@(3)] PDValue]);
     XCTAssertTrue(2 == PDDictionaryGetCount(PDObjectGetDictionary(object)), @"object dict count invalid");
     PDObjectGenerateDefinition(object, &buf, 1024);
     XCTAssertTrue(0 == strcmp(buf, "1 0 obj\n<< /Foo 1 /Zoo [ 1 2 3 ] >>\n"), @"object definition invalid");
@@ -315,7 +315,7 @@ describe(@"object dicts", ^{
     num = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Bar");//PDArrayGetElement(PDObjectGetArray(object), 1);
     XCTAssertTrue(NULL == num, @"value for /Bar should be NULL as it was deleted");
     
-    PDDictionarySetEntry(PDObjectGetDictionary(object), "Far", PDAutorelease(PDStringCreateWithName(strdup("Name"))));
+    PDDictionarySet(PDObjectGetDictionary(object), "Far", PDAutorelease(PDStringCreateWithName(strdup("Name"))));
     XCTAssertTrue(3 == PDDictionaryGetCount(PDObjectGetDictionary(object)), @"object dict count invalid");
     PDObjectGenerateDefinition(object, &buf, 1024);
     XCTAssertTrue(0 == strcmp(buf, "1 0 obj\n<< /Foo 1 /Zoo [ 1 2 3 ] /Far /Name >>\n"), @"object definition invalid");
@@ -348,7 +348,7 @@ describe(@"object dicts", ^{
     XCTAssertNotNull(str, @"null string in dict");
     XCTAssertTrue(PDStringEqualsCString(str, "/Name"), @"string invalid");
     
-    PDDictionarySetEntry(PDObjectGetDictionary(object), "Far", PDAutorelease(PDStringCreateWithName(strdup("/Other"))));
+    PDDictionarySet(PDObjectGetDictionary(object), "Far", PDAutorelease(PDStringCreateWithName(strdup("/Other"))));
     XCTAssertTrue(2 == PDDictionaryGetCount(PDObjectGetDictionary(object)), @"object dict count invalid");
     PDObjectGenerateDefinition(object, &buf, 1024);
     XCTAssertTrue(0 == strcmp(buf, "1 0 obj\n<< /Zoo [ 1 2 3 ] /Far /Other >>\n"), @"object definition invalid");
@@ -421,7 +421,7 @@ describe(@"scanner nested parentheses", ^{
 //            XCTAssertTrue(true == PDScannerPopStack(scn, &stack), @"Scanner did not pop a stack as expected.");
             PDDictionaryRef d = PDInstanceCreateFromComplex(&stack);
             PDDictionaryPrint(d);
-            PDStringRef s = PDDictionaryGetEntry(d, [i > 0 ? [NSString stringWithFormat:@"Par%d", i+1] : @"Par" UTF8String]);
+            PDStringRef s = PDDictionaryGet(d, [i > 0 ? [NSString stringWithFormat:@"Par%d", i+1] : @"Par" UTF8String]);
             expect(strcmp(req[i], PDStringEscapedValue(s, true))).to.equal(0);
 //            XCTAssertTrue(0 == strcmp(req[i], PDStringEscapedValue(s, true)), @"invalid result: %s", PDStringEscapedValue(s, true));
             //        XCTAssertTrue(0 == strcmp(req[i], (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info)), @"invalid result: %s", (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info));
@@ -612,9 +612,9 @@ describe(@"predictor", ^{
     });
     
     it(@"should find predictor", ^{
-        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
-        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
-        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        PDDictionaryRef options = PDDictionaryCreateWithBucketCount(8);
+        PDDictionarySet(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySet(options, "Predictor", PDNumberWithInteger(12));
         //[@{@"Columns": @(6), @"Predictor": @(12)} PDValue]; //pd_stack_create_from_definition
         //    (PDDef("6", "Columns",
         //         "12", "Predictor"));
@@ -627,9 +627,9 @@ describe(@"predictor", ^{
     });
 
     it(@"should find unpredictor", ^{
-        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
-        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
-        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        PDDictionaryRef options = PDDictionaryCreate();
+        PDDictionarySet(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySet(options, "Predictor", PDNumberWithInteger(12));
         //[@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
         //    pd_stack_create_from_definition
         //    (PDDef("6", "Columns",
@@ -654,9 +654,9 @@ describe(@"predictor inverter", ^{
     });
     
     it(@"should find predictor", ^{
-        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
-        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
-        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        PDDictionaryRef options = PDDictionaryCreate();
+        PDDictionarySet(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySet(options, "Predictor", PDNumberWithInteger(12));
         //[@{@"Columns": @(6), @"Predictor": @(12)} PDValue];
         //    pd_stack_create_from_definition
         //    (PDDef("6", "Columns",
@@ -690,9 +690,9 @@ describe(@"flate decode predictor", ^{
     // predict + compress
     
     it(@"should find predictor", ^{
-        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
-        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
-        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        PDDictionaryRef options = PDDictionaryCreate();
+        PDDictionarySet(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySet(options, "Predictor", PDNumberWithInteger(12));
     
         pred = PDStreamFilterObtain("Predictor", false, options);
         expect(pred).toNot.beNil();
@@ -701,9 +701,9 @@ describe(@"flate decode predictor", ^{
     });
     
     it(@"should find unpredictor", ^{
-        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
-        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
-        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        PDDictionaryRef options = PDDictionaryCreate();
+        PDDictionarySet(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySet(options, "Predictor", PDNumberWithInteger(12));
         
         unpred = PDStreamFilterObtain("Predictor", true, options);
         expect(unpred).toNot.beNil();
@@ -748,9 +748,9 @@ describe(@"flate decode predictor inversion", ^{
     // predict + compress
     
     it(@"should find predictor", ^{
-        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
-        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
-        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        PDDictionaryRef options = PDDictionaryCreate();
+        PDDictionarySet(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySet(options, "Predictor", PDNumberWithInteger(12));
         
         pred = PDStreamFilterObtain("Predictor", false, options);
         expect(pred).toNot.beNil();
@@ -792,9 +792,9 @@ describe(@"flate decode predictor inversion multi-pass", ^{
     // predict + compress
     
     it(@"should find predictor", ^{
-        PDDictionaryRef options = PDDictionaryCreateWithCapacity(2);
-        PDDictionarySetEntry(options, "Columns", PDNumberWithInteger(6));
-        PDDictionarySetEntry(options, "Predictor", PDNumberWithInteger(12));
+        PDDictionaryRef options = PDDictionaryCreate();
+        PDDictionarySet(options, "Columns", PDNumberWithInteger(6));
+        PDDictionarySet(options, "Predictor", PDNumberWithInteger(12));
         
         pred = PDStreamFilterObtain("Predictor", false, options);
         expect(pred).toNot.beNil();

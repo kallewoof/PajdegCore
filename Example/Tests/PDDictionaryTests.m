@@ -1,5 +1,5 @@
 //
-//  PDHashMapTests.m
+//  PDDictionaryTests.m
 //  pajdeg
 //
 //  Created by Karl-Johan Alm on 23/11/14.
@@ -8,12 +8,12 @@
 
 #include "pd_pdf_implementation.h"
 #include "PDReference.h"
-#include "PDHashMap.h"
+#include "PDDictionary.h"
 #include "PDString.h"
 
 extern PDInteger PDGetRetainCount(void *pajdegObject);
 
-SpecBegin(PDHashMapTests)
+SpecBegin(PDDictionaryTests)
 
 #define expectPDStringEquals(a,b) expect(strcmp(PDStringEscapedValue(a, false), PDStringEscapedValue(b, false))).to.equal(0)
 
@@ -24,7 +24,7 @@ describe(@"hash map", ^{
     });
     
     describe(@"creation", ^{
-        PDHashMapRef hm = PDHashMapCreate();
+        PDDictionaryRef hm = PDDictionaryCreate();
         
         afterAll(^{
             PDRelease(hm);
@@ -35,7 +35,7 @@ describe(@"hash map", ^{
         });
         
         it(@"should have 0 items", ^{
-            expect(PDHashMapGetCount(hm)).to.equal(0);
+            expect(PDDictionaryGetCount(hm)).to.equal(0);
         });
     });
     
@@ -43,15 +43,15 @@ describe(@"hash map", ^{
         char *k = "key";
         PDStringRef v = PDStringWithCString(strdup("hello"));
         
-        PDHashMapRef hm = PDHashMapCreate();
+        PDDictionaryRef hm = PDDictionaryCreate();
         
         afterAll(^{
             PDRelease(hm);
         });
         
-        PDHashMapSet(hm, k, v);
-        PDInteger count = PDHashMapGetCount(hm);
-        PDStringRef got = PDRetain(PDHashMapGet(hm, k));
+        PDDictionarySet(hm, k, v);
+        PDInteger count = PDDictionaryGetCount(hm);
+        PDStringRef got = PDRetain(PDDictionaryGet(hm, k));
         
         it(@"should have 1 item after insertion", ^{
             expect(count).to.equal(1);
@@ -65,9 +65,9 @@ describe(@"hash map", ^{
         describe(@"replacement", ^{
             PDStringRef v2 = PDRetain(PDStringWithCString(strdup("world")));
             
-            PDHashMapSet(hm, k, v2);
-            PDInteger count = PDHashMapGetCount(hm);
-            PDStringRef got = PDRetain(PDHashMapGet(hm, k));
+            PDDictionarySet(hm, k, v2);
+            PDInteger count = PDDictionaryGetCount(hm);
+            PDStringRef got = PDRetain(PDDictionaryGet(hm, k));
             
             it(@"should still have 1 item after replacement", ^{
                 expect(count).to.equal(1);
@@ -83,10 +83,10 @@ describe(@"hash map", ^{
                 char *k2 = "key2";
                 PDStringRef v3 = PDStringWithCString(strdup("good bye"));
                 
-                PDHashMapSet(hm, k2, v3);
-                PDInteger count = PDHashMapGetCount(hm);
-                PDStringRef g1 = PDHashMapGet(hm, k);
-                PDStringRef g2 = PDHashMapGet(hm, k2);
+                PDDictionarySet(hm, k2, v3);
+                PDInteger count = PDDictionaryGetCount(hm);
+                PDStringRef g1 = PDDictionaryGet(hm, k);
+                PDStringRef g2 = PDDictionaryGet(hm, k2);
                 
                 it(@"should have 2 items after second insertion", ^{
                     expect(count).to.equal(2);
@@ -105,21 +105,21 @@ describe(@"hash map", ^{
         char *k = "key";
         PDStringRef v = PDStringWithCString(strdup("hello"));
         
-        PDHashMapRef hm = PDHashMapCreate();
+        PDDictionaryRef hm = PDDictionaryCreate();
         
         afterAll(^{
             PDRelease(hm);
         });
         
-        PDHashMapSet(hm, k, v);
-        PDHashMapDelete(hm, k);
+        PDDictionarySet(hm, k, v);
+        PDDictionaryDelete(hm, k);
         
         it(@"should have 0 items after deletion", ^{
-            expect(PDHashMapGetCount(hm)).to.equal(0);
+            expect(PDDictionaryGetCount(hm)).to.equal(0);
         });
         
         it(@"should return NULL (\"\") for deleted keys", ^{
-            expect(PDHashMapGet(hm, k)).to.equal(NULL);
+            expect(PDDictionaryGet(hm, k)).to.equal(NULL);
         });
     });
     
@@ -141,7 +141,7 @@ describe(@"hash map", ^{
 #endif
         
         NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-        PDHashMapRef hm = PDHashMapCreate();
+        PDDictionaryRef hm = PDDictionaryCreate();
         
         for (int i = 0; i < 1000; i++) {
             PDInteger k = nextval(1, 100);
@@ -153,28 +153,28 @@ describe(@"hash map", ^{
                 PDStringRef vp = PDStringWithCString(strdup(vs.UTF8String));
                 //printf("+ %ld = %ld\n", k, v);
                 [dict setObject:vs forKey:ks];
-                PDHashMapSet(hm, kp, vp);
+                PDDictionarySet(hm, kp, vp);
             } else {
                 //printf("- %ld\n", k);
                 [dict removeObjectForKey:ks];
-                PDHashMapDelete(hm, kp);
+                PDDictionaryDelete(hm, kp);
             }
         }
         
-        PDInteger kcount = PDHashMapGetCount(hm);
+        PDInteger kcount = PDDictionaryGetCount(hm);
         void **keys = malloc(sizeof(void*) * kcount);
         
-        PDHashMapPopulateKeys(hm, (void*)keys);
+        PDDictionaryPopulateKeys(hm, (void*)keys);
 //        printf("[ ");
 //        for (PDInteger i = 0; i < kcount; i++) 
-//            printf(" %ld=%ld", (PDInteger)keys[i], (PDInteger)PDHashMapGet(hm, (PDInteger)keys[i]));
+//            printf(" %ld=%ld", (PDInteger)keys[i], (PDInteger)PDDictionaryGet(hm, (PDInteger)keys[i]));
 //        printf(" ]\n");
 //        printf("< ");
 //        for (NSNumber *n in dict) printf(" %ld=%ld", n.longValue, [[dict objectForKey:n] longValue]);
 //        printf(" >\n");
         
         it(@"should match the count", ^{
-            expect(dict.count).to.equal(PDHashMapGetCount(hm));
+            expect(dict.count).to.equal(PDDictionaryGetCount(hm));
         });
         
         it(@"should be identical (dict -> hm)", ^{
@@ -183,7 +183,7 @@ describe(@"hash map", ^{
                 char *ks = strdup(s.UTF8String);
                 NSString *v = dict[s];
                 PDStringRef vs = PDStringWithCString(strdup(v.UTF8String));
-                expectPDStringEquals(vs, PDHashMapGet(hm, ks));
+                expectPDStringEquals(vs, PDDictionaryGet(hm, ks));
                 free(ks);
             }
         });
@@ -195,7 +195,7 @@ describe(@"hash map", ^{
                 NSString *s = [NSString stringWithUTF8String:ks];
                 NSString *v = dict[s];
                 PDStringRef vs = PDStringWithCString(strdup(v.UTF8String));
-                expectPDStringEquals(vs, PDHashMapGet(hm, ks));
+                expectPDStringEquals(vs, PDDictionaryGet(hm, ks));
             }
         });
         

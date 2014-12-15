@@ -38,8 +38,7 @@
 		E26BE02A1984054800E8DB1C /* Tagged.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE01D1984054800E8DB1C /* Tagged.pdf */; };
 		E26BE02B1984054800E8DB1C /* TouchUp.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE01E1984054800E8DB1C /* TouchUp.pdf */; };
 		E26BE02C1984054800E8DB1C /* Untagged.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE01F1984054800E8DB1C /* Untagged.pdf */; };
-		E2CE51A81A20548D00D5D1F5 /* PDHashMap.c in Sources */ = {isa = PBXBuildFile; fileRef = E2CE51A61A20548D00D5D1F5 /* PDHashMap.c */; };
-		E2CE51AA1A221D3F00D5D1F5 /* PDHashMapTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E2CE51A91A221D3F00D5D1F5 /* PDHashMapTests.m */; };
+		E2CE51AA1A221D3F00D5D1F5 /* PDDictionaryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E2CE51A91A221D3F00D5D1F5 /* PDDictionaryTests.m */; };
 		E2E293521982A426002B3086 /* PDTreeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E2E293511982A426002B3086 /* PDTreeTests.m */; };
 		E2E293AD1982A4A6002B3086 /* pd_aes256.c in Sources */ = {isa = PBXBuildFile; fileRef = E2E2935D1982A4A6002B3086 /* pd_aes256.c */; };
 		E2E293AE1982A4A6002B3086 /* pd_crypto.c in Sources */ = {isa = PBXBuildFile; fileRef = E2E293601982A4A6002B3086 /* pd_crypto.c */; };
@@ -136,7 +135,7 @@
 		E26BE01F1984054800E8DB1C /* Untagged.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Untagged.pdf; sourceTree = "<group>"; };
 		E2CE51A61A20548D00D5D1F5 /* PDHashMap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = PDHashMap.c; path = src/PDHashMap.c; sourceTree = "<group>"; };
 		E2CE51A71A20548D00D5D1F5 /* PDHashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PDHashMap.h; path = src/PDHashMap.h; sourceTree = "<group>"; };
-		E2CE51A91A221D3F00D5D1F5 /* PDHashMapTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDHashMapTests.m; sourceTree = "<group>"; };
+		E2CE51A91A221D3F00D5D1F5 /* PDDictionaryTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDDictionaryTests.m; sourceTree = "<group>"; };
 		E2E293511982A426002B3086 /* PDTreeTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDTreeTests.m; sourceTree = "<group>"; };
 		E2E2935C1982A4A6002B3086 /* Pajdeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pajdeg.h; path = src/Pajdeg.h; sourceTree = "<group>"; };
 		E2E2935D1982A4A6002B3086 /* pd_aes256.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pd_aes256.c; path = src/pd_aes256.c; sourceTree = "<group>"; };
@@ -322,7 +321,7 @@
 				6003F5BB195388D20070C39A /* Tests.m */,
 				E2E293511982A426002B3086 /* PDTreeTests.m */,
 				E2E293D21982BD34002B3086 /* PDTypeTests.m */,
-				E2CE51A91A221D3F00D5D1F5 /* PDHashMapTests.m */,
+				E2CE51A91A221D3F00D5D1F5 /* PDDictionaryTests.m */,
 				6003F5B6195388D20070C39A /* Supporting Files */,
 			);
 			path = Tests;
@@ -656,7 +655,6 @@
 				E2E293B51982A4A6002B3086 /* PDContentStream.c in Sources */,
 				E2E293B01982A4A6002B3086 /* pd_pdf_implementation.c in Sources */,
 				E2E293BC1982A4A6002B3086 /* PDObjectStream.c in Sources */,
-				E2CE51A81A20548D00D5D1F5 /* PDHashMap.c in Sources */,
 				E2E293BB1982A4A6002B3086 /* PDObject.c in Sources */,
 				E2E293CC1982A4A6002B3086 /* PDTask.c in Sources */,
 				E2E293C81982A4A6002B3086 /* PDStreamFilter.c in Sources */,
@@ -687,7 +685,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E2CE51AA1A221D3F00D5D1F5 /* PDHashMapTests.m in Sources */,
+				E2CE51AA1A221D3F00D5D1F5 /* PDDictionaryTests.m in Sources */,
 				E2E293D31982BD34002B3086 /* PDTypeTests.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
 				E2E293521982A426002B3086 /* PDTreeTests.m in Sources */,
