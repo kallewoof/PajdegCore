@@ -133,8 +133,6 @@
 		E26BE01D1984054800E8DB1C /* Tagged.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Tagged.pdf; sourceTree = "<group>"; };
 		E26BE01E1984054800E8DB1C /* TouchUp.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = TouchUp.pdf; sourceTree = "<group>"; };
 		E26BE01F1984054800E8DB1C /* Untagged.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Untagged.pdf; sourceTree = "<group>"; };
-		E2CE51A61A20548D00D5D1F5 /* PDHashMap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = PDHashMap.c; path = src/PDHashMap.c; sourceTree = "<group>"; };
-		E2CE51A71A20548D00D5D1F5 /* PDHashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PDHashMap.h; path = src/PDHashMap.h; sourceTree = "<group>"; };
 		E2CE51A91A221D3F00D5D1F5 /* PDDictionaryTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDDictionaryTests.m; sourceTree = "<group>"; };
 		E2E293511982A426002B3086 /* PDTreeTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDTreeTests.m; sourceTree = "<group>"; };
 		E2E2935C1982A4A6002B3086 /* Pajdeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pajdeg.h; path = src/Pajdeg.h; sourceTree = "<group>"; };
@@ -407,8 +405,6 @@
 				E2E293751982A4A6002B3086 /* PDContentStreamTextExtractor.h */,
 				E2E293771982A4A6002B3086 /* PDDictionary.c */,
 				E2E293781982A4A6002B3086 /* PDDictionary.h */,
-				E2CE51A61A20548D00D5D1F5 /* PDHashMap.c */,
-				E2CE51A71A20548D00D5D1F5 /* PDHashMap.h */,
 				E2E293791982A4A6002B3086 /* PDEnv.c */,
 				E2E2937A1982A4A6002B3086 /* PDEnv.h */,
 				E2E2937B1982A4A6002B3086 /* PDNumber.c */,

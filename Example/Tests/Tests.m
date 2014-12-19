@@ -19,6 +19,7 @@
 #include "PDString.h"
 #include "PDDictionary.h"
 #include "PDNumber.h"
+#include "PDContentStreamTextExtractor.h"
 #import <XCTest/XCTest.h>
 
 #define PIPE_FILE_IN_BASE  @"test123"
@@ -840,6 +841,54 @@ describe(@"task filter", ^{
         PDRelease(task);
     
         expect(PDPipeExecute(_pipe)).to.beGreaterThan(-1);
+    });
+});
+
+describe(@"text extraction (japanese)", ^{
+    it(@"should config", ^{
+        NSString *file_in  = [[NSBundle bundleForClass:self.class] pathForResource:@"Japanese" ofType:@"pdf"];
+        configIn(file_in, @"/dev/null");
+    });
+    
+    __block PDPageRef page = NULL;
+    __block PDParserRef parser = NULL;
+    __block PDObjectRef contentsOb = nil;
+    
+    it(@"should fetch page", ^{
+        parser = PDPipeGetParser(_pipe);
+        PDCatalogRef catalog = PDParserGetCatalog(parser);
+        expect(catalog).toNot.beNil();
+        if (catalog) {
+            PDInteger obid = PDCatalogGetObjectIDForPage(catalog, 1);
+            PDObjectRef pageOb = PDParserLocateAndCreateObject(parser, obid, true);
+            char *buf = malloc(64);
+            PDInteger cap = 64;
+            PDObjectGenerateDefinition(pageOb, &buf, cap);
+            printf("page object = %s", buf);
+            free(buf);
+            page = PDPageCreateWithObject(parser, pageOb);
+            expect(page).toNot.beNil();
+        }
+    });
+    
+    it(@"should fetch contents", ^{
+        PDInteger count = PDPageGetContentsObjectCount(page);
+        expect(count).to.beGreaterThan(0);
+        if (count > 0) {
+            contentsOb = PDPageGetContentsObjectAtIndex(page, 0);
+            char *contentStream = PDParserLocateAndFetchObjectStreamForObject(parser, contentsOb);
+            expect(contentStream).toNot.beNil();
+        }
+    });
+    
+    it(@"should extract text", ^{
+        expect(contentsOb).toNot.beNil();
+        if (contentsOb) {
+            char *buf;
+            PDContentStreamRef te = PDContentStreamCreateTextExtractor(contentsOb, &buf);
+            PDContentStreamExecute(te);
+            expect(buf).toNot.beNil();
+        }
     });
 });
 
