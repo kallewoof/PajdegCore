@@ -31,7 +31,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Pod/Source/src/'
   #s.resources = 'Pod/Assets/*.png'
   
-  s.xcconfig = { 'OTHER_LDFLAGS' => '-l z.1' }
+  s.xcconfig = { 'OTHER_LDFLAGS' => '-l z.1 -l iconv' }
 
   s.public_header_files = 'Pod/Source/src/*.h'
   # s.frameworks = 'UIKit', 'MapKit'

@@ -15,7 +15,7 @@ extern PDInteger PDGetRetainCount(void *pajdegObject);
 
 SpecBegin(PDDictionaryTests)
 
-#define expectPDStringEquals(a,b) expect(strcmp(PDStringEscapedValue(a, false), PDStringEscapedValue(b, false))).to.equal(0)
+#define expectPDStringEquals(a,b) expect(PDStringEqualsString(a, b)).to.beTruthy()
 
 describe(@"hash map", ^{
     

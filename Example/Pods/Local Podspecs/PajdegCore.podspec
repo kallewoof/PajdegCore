@@ -9,7 +9,7 @@
 
 Pod::Spec.new do |s|
   s.name             = "PajdegCore"
-  s.version          = "0.2.0"
+  s.version          = "0.2.2"
   s.summary          = "C library for mutating PDF files"
   s.description      = <<-DESC
   Pajdeg is a self-contained C library for mutating (modifying) PDFs. 
@@ -31,7 +31,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Pod/Source/src/'
   #s.resources = 'Pod/Assets/*.png'
   
-  s.xcconfig = { 'OTHER_LDFLAGS' => '-l z.1' }
+  s.xcconfig = { 'OTHER_LDFLAGS' => '-l z.1 -l iconv' }
 
   s.public_header_files = 'Pod/Source/src/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
