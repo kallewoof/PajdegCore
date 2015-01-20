@@ -23,6 +23,10 @@
 		6003F5BC195388D20070C39A /* Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6003F5BB195388D20070C39A /* Tests.m */; };
 		A954A029C9C44BAC822BDD5E /* libPods-pajdeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0149AADCFC1487C80BA8ACD /* libPods-pajdeg.a */; };
 		AE8A1B52D4ED49EE9CCBA2C4 /* libPods-Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8156DDFE481C48B4BB7E0694 /* libPods-Tests.a */; };
+		E23730621A4814CC0076BEBD /* PDContentStreamTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E23730611A4814CC0076BEBD /* PDContentStreamTests.m */; };
+		E23730681A481D450076BEBD /* PDFontDictionary.c in Sources */ = {isa = PBXBuildFile; fileRef = E23730661A481D450076BEBD /* PDFontDictionary.c */; };
+		E237306E1A481EF90076BEBD /* PDFont.c in Sources */ = {isa = PBXBuildFile; fileRef = E237306C1A481EF90076BEBD /* PDFont.c */; };
+		E23730701A48491F0076BEBD /* PDStringUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = E237306F1A48491F0076BEBD /* PDStringUTF.c */; };
 		E26BE00F1983EEA800E8DB1C /* test123.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE00E1983EEA800E8DB1C /* test123.pdf */; };
 		E26BE0111984009300E8DB1C /* pxp.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE0101984009300E8DB1C /* pxp.pdf */; };
 		E26BE0201984054800E8DB1C /* Capture.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE0131984054800E8DB1C /* Capture.pdf */; };
@@ -38,6 +42,10 @@
 		E26BE02A1984054800E8DB1C /* Tagged.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE01D1984054800E8DB1C /* Tagged.pdf */; };
 		E26BE02B1984054800E8DB1C /* TouchUp.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE01E1984054800E8DB1C /* TouchUp.pdf */; };
 		E26BE02C1984054800E8DB1C /* Untagged.pdf in Resources */ = {isa = PBXBuildFile; fileRef = E26BE01F1984054800E8DB1C /* Untagged.pdf */; };
+		E27F718E1A6E5A650074FC9F /* PDPostScriptTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E27F718D1A6E5A650074FC9F /* PDPostScriptTests.m */; };
+		E27F71911A6E5ACD0074FC9F /* pd_ps_implementation.c in Sources */ = {isa = PBXBuildFile; fileRef = E27F718F1A6E5ACD0074FC9F /* pd_ps_implementation.c */; };
+		E27F71941A6E5AD50074FC9F /* PDCMap.c in Sources */ = {isa = PBXBuildFile; fileRef = E27F71921A6E5AD50074FC9F /* PDCMap.c */; };
+		E27F71961A6E5AF80074FC9F /* libiconv.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E27F71951A6E5AF80074FC9F /* libiconv.2.dylib */; };
 		E2CE51AA1A221D3F00D5D1F5 /* PDDictionaryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E2CE51A91A221D3F00D5D1F5 /* PDDictionaryTests.m */; };
 		E2E293521982A426002B3086 /* PDTreeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E2E293511982A426002B3086 /* PDTreeTests.m */; };
 		E2E293AD1982A4A6002B3086 /* pd_aes256.c in Sources */ = {isa = PBXBuildFile; fileRef = E2E2935D1982A4A6002B3086 /* pd_aes256.c */; };
@@ -118,6 +126,12 @@
 		8B9E44DE8D9097983828BF2D /* Pods-Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Tests/Pods-Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		930C4FA2DD92D1B5F5A8483A /* Pods-pajdeg.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-pajdeg.release.xcconfig"; path = "Pods/Target Support Files/Pods-pajdeg/Pods-pajdeg.release.xcconfig"; sourceTree = "<group>"; };
 		D0149AADCFC1487C80BA8ACD /* libPods-pajdeg.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-pajdeg.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E23730611A4814CC0076BEBD /* PDContentStreamTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDContentStreamTests.m; sourceTree = "<group>"; };
+		E23730661A481D450076BEBD /* PDFontDictionary.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = PDFontDictionary.c; path = src/PDFontDictionary.c; sourceTree = "<group>"; };
+		E23730671A481D450076BEBD /* PDFontDictionary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PDFontDictionary.h; path = src/PDFontDictionary.h; sourceTree = "<group>"; };
+		E237306C1A481EF90076BEBD /* PDFont.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = PDFont.c; path = src/PDFont.c; sourceTree = "<group>"; };
+		E237306D1A481EF90076BEBD /* PDFont.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PDFont.h; path = src/PDFont.h; sourceTree = "<group>"; };
+		E237306F1A48491F0076BEBD /* PDStringUTF.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = PDStringUTF.c; path = src/PDStringUTF.c; sourceTree = "<group>"; };
 		E26BE00E1983EEA800E8DB1C /* test123.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = test123.pdf; sourceTree = "<group>"; };
 		E26BE0101984009300E8DB1C /* pxp.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = pxp.pdf; sourceTree = "<group>"; };
 		E26BE0131984054800E8DB1C /* Capture.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Capture.pdf; sourceTree = "<group>"; };
@@ -133,6 +147,12 @@
 		E26BE01D1984054800E8DB1C /* Tagged.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Tagged.pdf; sourceTree = "<group>"; };
 		E26BE01E1984054800E8DB1C /* TouchUp.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = TouchUp.pdf; sourceTree = "<group>"; };
 		E26BE01F1984054800E8DB1C /* Untagged.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Untagged.pdf; sourceTree = "<group>"; };
+		E27F718D1A6E5A650074FC9F /* PDPostScriptTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDPostScriptTests.m; sourceTree = "<group>"; };
+		E27F718F1A6E5ACD0074FC9F /* pd_ps_implementation.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pd_ps_implementation.c; path = src/pd_ps_implementation.c; sourceTree = "<group>"; };
+		E27F71901A6E5ACD0074FC9F /* pd_ps_implementation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = pd_ps_implementation.h; path = src/pd_ps_implementation.h; sourceTree = "<group>"; };
+		E27F71921A6E5AD50074FC9F /* PDCMap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = PDCMap.c; path = src/PDCMap.c; sourceTree = "<group>"; };
+		E27F71931A6E5AD50074FC9F /* PDCMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PDCMap.h; path = src/PDCMap.h; sourceTree = "<group>"; };
+		E27F71951A6E5AF80074FC9F /* libiconv.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiconv.2.dylib; path = usr/lib/libiconv.2.dylib; sourceTree = SDKROOT; };
 		E2CE51A91A221D3F00D5D1F5 /* PDDictionaryTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDDictionaryTests.m; sourceTree = "<group>"; };
 		E2E293511982A426002B3086 /* PDTreeTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDTreeTests.m; sourceTree = "<group>"; };
 		E2E2935C1982A4A6002B3086 /* Pajdeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Pajdeg.h; path = src/Pajdeg.h; sourceTree = "<group>"; };
@@ -218,6 +238,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E27F71961A6E5AF80074FC9F /* libiconv.2.dylib in Frameworks */,
 				E2E293D11982A6F3002B3086 /* libz.dylib in Frameworks */,
 				6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */,
 				6003F592195388D20070C39A /* UIKit.framework in Frameworks */,
@@ -274,6 +295,7 @@
 		6003F58C195388D20070C39A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				E27F71951A6E5AF80074FC9F /* libiconv.2.dylib */,
 				E2E293D01982A6F3002B3086 /* libz.dylib */,
 				6003F58D195388D20070C39A /* Foundation.framework */,
 				6003F58F195388D20070C39A /* CoreGraphics.framework */,
@@ -320,6 +342,8 @@
 				E2E293511982A426002B3086 /* PDTreeTests.m */,
 				E2E293D21982BD34002B3086 /* PDTypeTests.m */,
 				E2CE51A91A221D3F00D5D1F5 /* PDDictionaryTests.m */,
+				E23730611A4814CC0076BEBD /* PDContentStreamTests.m */,
+				E27F718D1A6E5A650074FC9F /* PDPostScriptTests.m */,
 				6003F5B6195388D20070C39A /* Supporting Files */,
 			);
 			path = Tests;
@@ -389,24 +413,32 @@
 				E2E293641982A4A6002B3086 /* pd_md5.h */,
 				E2E293651982A4A6002B3086 /* pd_pdf_implementation.c */,
 				E2E293661982A4A6002B3086 /* pd_pdf_implementation.h */,
+				E27F718F1A6E5ACD0074FC9F /* pd_ps_implementation.c */,
+				E27F71901A6E5ACD0074FC9F /* pd_ps_implementation.h */,
 				E2E293671982A4A6002B3086 /* pd_pdf_private.h */,
 				E2E293681982A4A6002B3086 /* pd_stack.c */,
 				E2E293691982A4A6002B3086 /* pd_stack.h */,
-				E2E293761982A4A6002B3086 /* PDDefines.h */,
 				E2E2936A1982A4A6002B3086 /* PDArray.c */,
 				E2E2936B1982A4A6002B3086 /* PDArray.h */,
 				E2E2936C1982A4A6002B3086 /* PDCatalog.c */,
 				E2E2936D1982A4A6002B3086 /* PDCatalog.h */,
+				E27F71921A6E5AD50074FC9F /* PDCMap.c */,
+				E27F71931A6E5AD50074FC9F /* PDCMap.h */,
 				E2E293701982A4A6002B3086 /* PDContentStream.c */,
 				E2E293711982A4A6002B3086 /* PDContentStream.h */,
 				E2E293721982A4A6002B3086 /* PDContentStreamPrinter.c */,
 				E2E293731982A4A6002B3086 /* PDContentStreamPrinter.h */,
 				E2E293741982A4A6002B3086 /* PDContentStreamTextExtractor.c */,
 				E2E293751982A4A6002B3086 /* PDContentStreamTextExtractor.h */,
+				E2E293761982A4A6002B3086 /* PDDefines.h */,
 				E2E293771982A4A6002B3086 /* PDDictionary.c */,
 				E2E293781982A4A6002B3086 /* PDDictionary.h */,
 				E2E293791982A4A6002B3086 /* PDEnv.c */,
 				E2E2937A1982A4A6002B3086 /* PDEnv.h */,
+				E237306C1A481EF90076BEBD /* PDFont.c */,
+				E237306D1A481EF90076BEBD /* PDFont.h */,
+				E23730661A481D450076BEBD /* PDFontDictionary.c */,
+				E23730671A481D450076BEBD /* PDFontDictionary.h */,
 				E2E2937B1982A4A6002B3086 /* PDNumber.c */,
 				E2E2937C1982A4A6002B3086 /* PDNumber.h */,
 				E2E2937D1982A4A6002B3086 /* PDObject.c */,
@@ -443,6 +475,7 @@
 				E2E2939C1982A4A6002B3086 /* PDStreamFilterPrediction.h */,
 				E2E2939D1982A4A6002B3086 /* PDString.c */,
 				E2E2939E1982A4A6002B3086 /* PDString.h */,
+				E237306F1A48491F0076BEBD /* PDStringUTF.c */,
 				E2E2939F1982A4A6002B3086 /* PDTask.c */,
 				E2E293A01982A4A6002B3086 /* PDTask.h */,
 				E2E293A11982A4A6002B3086 /* PDTwinStream.c */,
@@ -649,9 +682,11 @@
 				E2E293C51982A4A6002B3086 /* PDSplayTree.c in Sources */,
 				E2E293BA1982A4A6002B3086 /* PDNumber.c in Sources */,
 				E2E293B51982A4A6002B3086 /* PDContentStream.c in Sources */,
+				E23730681A481D450076BEBD /* PDFontDictionary.c in Sources */,
 				E2E293B01982A4A6002B3086 /* pd_pdf_implementation.c in Sources */,
 				E2E293BC1982A4A6002B3086 /* PDObjectStream.c in Sources */,
 				E2E293BB1982A4A6002B3086 /* PDObject.c in Sources */,
+				E23730701A48491F0076BEBD /* PDStringUTF.c in Sources */,
 				E2E293CC1982A4A6002B3086 /* PDTask.c in Sources */,
 				E2E293C81982A4A6002B3086 /* PDStreamFilter.c in Sources */,
 				E2E293BF1982A4A6002B3086 /* PDParser.c in Sources */,
@@ -659,6 +694,7 @@
 				6003F5A7195388D20070C39A /* PDViewController.m in Sources */,
 				E2E293BE1982A4A6002B3086 /* PDPage.c in Sources */,
 				E2E293C61982A4A6002B3086 /* PDState.c in Sources */,
+				E27F71941A6E5AD50074FC9F /* PDCMap.c in Sources */,
 				E2E293AE1982A4A6002B3086 /* pd_crypto.c in Sources */,
 				E2E293AD1982A4A6002B3086 /* pd_aes256.c in Sources */,
 				E2E293B71982A4A6002B3086 /* PDContentStreamTextExtractor.c in Sources */,
@@ -666,7 +702,9 @@
 				E2E293B81982A4A6002B3086 /* PDDictionary.c in Sources */,
 				E2E293CD1982A4A6002B3086 /* PDTwinStream.c in Sources */,
 				E2E293CA1982A4A6002B3086 /* PDStreamFilterPrediction.c in Sources */,
+				E237306E1A481EF90076BEBD /* PDFont.c in Sources */,
 				E2E293B61982A4A6002B3086 /* PDContentStreamPrinter.c in Sources */,
+				E27F71911A6E5ACD0074FC9F /* pd_ps_implementation.c in Sources */,
 				E2E293BD1982A4A6002B3086 /* PDOperator.c in Sources */,
 				6003F59A195388D20070C39A /* main.m in Sources */,
 				E2E293C01982A4A6002B3086 /* PDParserAttachment.c in Sources */,
@@ -681,7 +719,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E27F718E1A6E5A650074FC9F /* PDPostScriptTests.m in Sources */,
 				E2CE51AA1A221D3F00D5D1F5 /* PDDictionaryTests.m in Sources */,
+				E23730621A4814CC0076BEBD /* PDContentStreamTests.m in Sources */,
 				E2E293D31982BD34002B3086 /* PDTypeTests.m in Sources */,
 				6003F5BC195388D20070C39A /* Tests.m in Sources */,
 				E2E293521982A426002B3086 /* PDTreeTests.m in Sources */,
