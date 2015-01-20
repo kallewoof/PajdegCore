@@ -97,7 +97,6 @@ describe(@"toUnicode CMap (1)", ^{
     PDDictionaryRef dict = pd_ps_get_operand(pse, 0);
     // should be right type
     expect(PDResolve(dict)).to.equal(PDInstanceTypeDict);
-    PDDictionaryPrint(dict);
     
     // should have a CIDSystemInfo entry
     PDDictionaryRef sysInfo = PDDictionaryGet(dict, "CIDSystemInfo");
@@ -157,8 +156,6 @@ describe(@"toUnicode CMap (2)", ^{
     // should be right type
     expect(PDResolve(dict15) == PDInstanceTypeDict).to.beTruthy();
     expect(PDResolve(dict9) == PDInstanceTypeDict).to.beTruthy();
-    PDDictionaryPrint(dict15);
-    PDDictionaryPrint(dict9);
     
     // should have a CIDSystemInfo entry
     PDDictionaryRef sysInfo15 = PDDictionaryGet(dict15, "CIDSystemInfo");
