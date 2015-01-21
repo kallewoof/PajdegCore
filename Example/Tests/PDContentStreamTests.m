@@ -93,8 +93,8 @@ describe(@"text extraction (japanese)", ^{
         expect(contentsOb).toNot.beNil();
         if (contentsOb) {
             char *buf;
-            PDContentStreamRef te = PDContentStreamCreateTextExtractor(page, contentsOb, &buf);
-            PDContentStreamExecute(te);
+            PDContentStreamRef te = PDContentStreamCreateTextExtractor(page, &buf);
+            PDContentStreamExecute(te, contentsOb);
             expect(buf).toNot.beNil();
         }
     });
