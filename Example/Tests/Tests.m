@@ -28,13 +28,68 @@
 #define PIPE_FILE_IN   PIPE_FILE_IN_BASE  ".pdf"
 #define PIPE_FILE_OUT  PIPE_FILE_OUT_BASE ".pdf"
 
+PDStringRef PDStringCreateFromStringWithTypeX(PDStringRef string, PDStringType type, PDBool wrap, PDBool requireCopy)
+{
+    if (string->type == type && (string->type == PDStringTypeBinary || string->wrapped == wrap)) {
+        printf("cond1: returning as is\n");
+        return requireCopy ? PDStringCopy(string) : PDRetain(string);
+    }
+    
+    if (string->alt && string->alt->type == type && (string->alt->type == PDStringTypeBinary || string->alt->wrapped == wrap)) {
+        printf("cond2: returning alt as is\n");
+        return requireCopy ? PDStringCopy(string->alt) : PDRetain(string->alt);
+    }
+    
+    const char *res;
+    char *buf;
+    PDSize len;
+    PDStringRef result;
+    switch (type) {
+        case PDStringTypeEscaped:
+            res = PDStringEscapedValue(string, wrap, &len);
+            printf("escaped = '");
+            for (int i = 0; i < len; i++) printf("%c", res[i]);
+            printf("' = '%s'\n", res);
+            buf = malloc(len + 1);
+            memcpy(buf, res, len + 1);
+            printf("copy = '%s'\n", buf);
+            result = PDStringCreate(buf, len);
+            break;
+            
+        case PDStringTypeName:
+            result = PDStringCreateWithName(strdup(PDStringNameValue(string, wrap)));
+            break;
+            
+        case PDStringTypeHex:
+            result = PDStringCreateWithHexString(strdup(PDStringHexValue(string, wrap)));
+            break;
+            
+        default:
+            res = PDStringBinaryValue(string, &len);
+            printf("binary = '");
+            for (int i = 0; i < len; i++) printf("%c", res[i]);
+            printf("' = '%s'\n", res);
+            buf = malloc(len + 1);
+            memcpy(buf, res, len + 1);
+            printf("copy = '%s'\n", buf);
+            result = PDStringCreateBinary(buf, len);
+    }
+    
+#ifdef PD_SUPPORT_CRYPTO
+    if (string->ci) PDStringAttachCryptoInstance(result, string->ci, string->encrypted);
+#endif
+    if (string->font) PDStringSetFont(result, string->font);
+    return result;
+}
+
+
 PDBool PDStringEqualsCStringX(PDStringRef string, const char *cString)
 {
     PDBool result;
     
     PDStringRef utf8 = PDStringCreateUTF8Encoded(string);
     printf("utf8 string = %s\n", utf8->data);
-    PDStringRef compat = PDStringCreateFromStringWithType(utf8, cString[0] == '/' ? PDStringTypeName : PDStringTypeBinary, false, false);
+    PDStringRef compat = PDStringCreateFromStringWithTypeX(utf8, cString[0] == '/' ? PDStringTypeName : PDStringTypeBinary, false, false);
     printf("compat string = %s\n", compat->data);
     
     result = 0 == strcmp(compat->data, cString);
