@@ -196,12 +196,11 @@ describe(@"object arrays", ^{
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
         
+        printf("comparing '%s' vs 'test'\n", str->data);
         PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
-        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeBinary, false, false);
-        if (compat == NULL) 
-            printf("Compat is NULL\n");
-        else
-            printf("comparing '%s' vs 'test'\n", compat->data);
+        printf("comparing '%s' vs 'test'\n", utf8->data);
+        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
+        printf("comparing '%s' vs 'test'\n", compat->data);
         PDRelease(compat);
         PDRelease(utf8);
 
