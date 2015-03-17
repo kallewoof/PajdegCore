@@ -195,6 +195,13 @@ describe(@"object arrays", ^{
         expect(PDNumberGetInteger(num)).to.equal(0);
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
+        
+        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
+        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeBinary, false, false);
+        printf("comparing '%s' vs 'test'\n", compat->data);
+        PDRelease(compat);
+        PDRelease(utf8);
+
         expect(PDStringEqualsCString(str, "test")).to.beTruthy();
     });
     
