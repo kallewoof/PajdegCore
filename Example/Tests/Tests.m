@@ -28,6 +28,31 @@
 #define PIPE_FILE_IN   PIPE_FILE_IN_BASE  ".pdf"
 #define PIPE_FILE_OUT  PIPE_FILE_OUT_BASE ".pdf"
 
+PDBool PDStringEqualsCStringX(PDStringRef string, const char *cString)
+{
+    PDBool result;
+    
+    PDStringRef utf8 = PDStringCreateUTF8Encoded(string);
+    printf("utf8 string = %s\n", utf8->data);
+    PDStringRef compat = PDStringCreateFromStringWithType(utf8, cString[0] == '/' ? PDStringTypeName : PDStringTypeBinary, false, false);
+    printf("compat string = %s\n", compat->data);
+    
+    result = 0 == strcmp(compat->data, cString);
+    if (! result) {
+        // we may have a UTF starting symbol (which is invisible)
+        unsigned char *c = (unsigned char *)compat->data;
+        if (c[0] == 0xef && c[1] == 0xbb && c[2] == 0xbf) {
+            result = 0 == strcmp(&compat->data[3], cString);
+        }
+    }
+    
+    PDRelease(compat);
+    PDRelease(utf8);
+    
+    return result;
+}
+
+
 PDTaskResult taskTestFunc(PDPipeRef pipe, PDTaskRef task, PDObjectRef object, void *info)
 {
     return PDTaskDone;
@@ -204,7 +229,7 @@ describe(@"object arrays", ^{
         PDRelease(compat);
         PDRelease(utf8);
 
-        expect(PDStringEqualsCString(str, "test")).to.beTruthy();
+        expect(PDStringEqualsCStringX(str, "test")).to.beTruthy();
     });
     
     it(@"should append twice correctly", ^{
@@ -218,7 +243,7 @@ describe(@"object arrays", ^{
         expect(PDNumberGetInteger(num)).to.equal(0);
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
-        expect(PDStringEqualsCString(str, "test")).to.beTruthy();
+        expect(PDStringEqualsCStringX(str, "test")).to.beTruthy();
         str = PDArrayGetElement(PDObjectGetArray(object), 2);
         expect(str).toNot.beNil();
         
@@ -230,7 +255,7 @@ describe(@"object arrays", ^{
         PDRelease(compat);
         PDRelease(utf8);
 
-        expect(PDStringEqualsCString(str, "test2")).to.beTruthy();
+        expect(PDStringEqualsCStringX(str, "test2")).to.beTruthy();
         
     });
     
@@ -242,7 +267,7 @@ describe(@"object arrays", ^{
         expect(strcmp(buf, "1 0 obj\n[ (test) (test2) ]\n")).to.equal(0);
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 0);
         expect(str).toNot.beNil();
-        expect(PDStringEqualsCString(str, "test")).to.beTruthy();
+        expect(PDStringEqualsCStringX(str, "test")).to.beTruthy();
         str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
         
@@ -254,7 +279,7 @@ describe(@"object arrays", ^{
         PDRelease(compat);
         PDRelease(utf8);
 
-        expect(PDStringEqualsCString(str, "test2")).to.beTruthy();
+        expect(PDStringEqualsCStringX(str, "test2")).to.beTruthy();
         
     });
     
@@ -266,7 +291,7 @@ describe(@"object arrays", ^{
         expect(strcmp(buf, "1 0 obj\n[ (test) (test3) ]\n")).to.equal(0);
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 0);
         expect(str).toNot.beNil();
-        expect(PDStringEqualsCString(str, "test"), @"string invalid");
+        expect(PDStringEqualsCStringX(str, "test"), @"string invalid");
         str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
         
@@ -278,7 +303,7 @@ describe(@"object arrays", ^{
         PDRelease(compat);
         PDRelease(utf8);
 
-        expect(PDStringEqualsCString(str, "test3")).to.beTruthy();
+        expect(PDStringEqualsCStringX(str, "test3")).to.beTruthy();
         
     });
     
@@ -367,7 +392,7 @@ describe(@"object dicts", ^{
     XCTAssertTrue(3 == PDNumberGetInteger(PDArrayGetElement(arr, 2)), @"array invalid");
     PDStringRef str = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Far");// PDArrayGetElement(PDObjectGetArray(object), 2);
     XCTAssertNotNull(str, @"null string in dict");
-    XCTAssertTrue(PDStringEqualsCString(str, "/Name"), @"string invalid");
+    XCTAssertTrue(PDStringEqualsCStringX(str, "/Name"), @"string invalid");
     num = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Bar");//PDArrayGetElement(PDObjectGetArray(object), 1);
     XCTAssertTrue(NULL == num, @"value for /Bar should be NULL as it was deleted");
     
@@ -383,7 +408,7 @@ describe(@"object dicts", ^{
     XCTAssertTrue(3 == PDNumberGetInteger(PDArrayGetElement(arr, 2)), @"array invalid");
     str = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Far");// PDArrayGetElement(PDObjectGetArray(object), 2);
     XCTAssertNotNull(str, @"null string in dict");
-    XCTAssertTrue(PDStringEqualsCString(str, "/Name"), @"string invalid");
+    XCTAssertTrue(PDStringEqualsCStringX(str, "/Name"), @"string invalid");
     
     PDDictionarySet(PDObjectGetDictionary(object), "Far", PDAutorelease(PDStringCreateWithName(strdup("/Other"))));
     XCTAssertTrue(2 == PDDictionaryGetCount(PDObjectGetDictionary(object)), @"object dict count invalid");
@@ -397,7 +422,7 @@ describe(@"object dicts", ^{
     XCTAssertTrue(3 == PDNumberGetInteger(PDArrayGetElement(arr, 2)), @"array invalid");
     str = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Far");// PDArrayGetElement(PDObjectGetArray(object), 2);
     XCTAssertNotNull(str, @"null string in dict");
-    XCTAssertTrue(PDStringEqualsCString(str, "/Other"), @"string invalid");*/
+    XCTAssertTrue(PDStringEqualsCStringX(str, "/Other"), @"string invalid");*/
     
     afterAll(^{
         PDRelease(object);
