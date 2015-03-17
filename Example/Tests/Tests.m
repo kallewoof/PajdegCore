@@ -221,6 +221,15 @@ describe(@"object arrays", ^{
         expect(PDStringEqualsCString(str, "test")).to.beTruthy();
         str = PDArrayGetElement(PDObjectGetArray(object), 2);
         expect(str).toNot.beNil();
+        
+        printf("comparing '%s' vs 'test2'\n", str->data);
+        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
+        printf("comparing '%s' vs 'test2'\n", utf8->data);
+        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
+        printf("comparing '%s' vs 'test2'\n", compat->data);
+        PDRelease(compat);
+        PDRelease(utf8);
+
         expect(PDStringEqualsCString(str, "test2")).to.beTruthy();
         
     });
@@ -236,6 +245,15 @@ describe(@"object arrays", ^{
         expect(PDStringEqualsCString(str, "test")).to.beTruthy();
         str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
+        
+        printf("comparing '%s' vs 'test2'\n", str->data);
+        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
+        printf("comparing '%s' vs 'test2'\n", utf8->data);
+        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
+        printf("comparing '%s' vs 'test2'\n", compat->data);
+        PDRelease(compat);
+        PDRelease(utf8);
+
         expect(PDStringEqualsCString(str, "test2")).to.beTruthy();
         
     });
@@ -251,6 +269,15 @@ describe(@"object arrays", ^{
         expect(PDStringEqualsCString(str, "test"), @"string invalid");
         str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
+        
+        printf("comparing '%s' vs 'test3'\n", str->data);
+        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
+        printf("comparing '%s' vs 'test3'\n", utf8->data);
+        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
+        printf("comparing '%s' vs 'test3'\n", compat->data);
+        PDRelease(compat);
+        PDRelease(utf8);
+
         expect(PDStringEqualsCString(str, "test3")).to.beTruthy();
         
     });
