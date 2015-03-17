@@ -198,7 +198,10 @@ describe(@"object arrays", ^{
         
         PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
         PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeBinary, false, false);
-        printf("comparing '%s' vs 'test'\n", compat->data);
+        if (compat == NULL) 
+            printf("Compat is NULL\n");
+        else
+            printf("comparing '%s' vs 'test'\n", compat->data);
         PDRelease(compat);
         PDRelease(utf8);
 
