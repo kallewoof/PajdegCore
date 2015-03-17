@@ -28,86 +28,6 @@
 #define PIPE_FILE_IN   PIPE_FILE_IN_BASE  ".pdf"
 #define PIPE_FILE_OUT  PIPE_FILE_OUT_BASE ".pdf"
 
-PDStringRef PDStringCreateFromStringWithTypeX(PDStringRef string, PDStringType type, PDBool wrap, PDBool requireCopy)
-{
-    if (string->type == type && (string->type == PDStringTypeBinary || string->wrapped == wrap)) {
-        printf("cond1: returning as is\n");
-        return requireCopy ? PDStringCopy(string) : PDRetain(string);
-    }
-    
-    if (string->alt && string->alt->type == type && (string->alt->type == PDStringTypeBinary || string->alt->wrapped == wrap)) {
-        printf("cond2: returning alt as is\n");
-        return requireCopy ? PDStringCopy(string->alt) : PDRetain(string->alt);
-    }
-    
-    const char *res;
-    char *buf;
-    PDSize len;
-    PDStringRef result;
-    switch (type) {
-        case PDStringTypeEscaped:
-            res = PDStringEscapedValue(string, wrap, &len);
-            printf("escaped = '");
-            for (int i = 0; i < len; i++) printf("%c", res[i]);
-            printf("' = '%s'\n", res);
-            buf = malloc(len + 1);
-            memcpy(buf, res, len + 1);
-            printf("copy = '%s'\n", buf);
-            result = PDStringCreate(buf, len);
-            break;
-            
-        case PDStringTypeName:
-            result = PDStringCreateWithName(strdup(PDStringNameValue(string, wrap)));
-            break;
-            
-        case PDStringTypeHex:
-            result = PDStringCreateWithHexString(strdup(PDStringHexValue(string, wrap)));
-            break;
-            
-        default:
-            res = PDStringBinaryValue(string, &len);
-            printf("binary = '");
-            for (int i = 0; i < len; i++) printf("%c", res[i]);
-            printf("' = '%s'\n", res);
-            buf = malloc(len + 1);
-            memcpy(buf, res, len + 1);
-            printf("copy = '%s'\n", buf);
-            result = PDStringCreateBinary(buf, len);
-    }
-    
-#ifdef PD_SUPPORT_CRYPTO
-    if (string->ci) PDStringAttachCryptoInstance(result, string->ci, string->encrypted);
-#endif
-    if (string->font) PDStringSetFont(result, string->font);
-    return result;
-}
-
-
-PDBool PDStringEqualsCStringX(PDStringRef string, const char *cString)
-{
-    PDBool result;
-    
-    PDStringRef utf8 = PDStringCreateUTF8Encoded(string);
-    printf("utf8 string = %s\n", utf8->data);
-    PDStringRef compat = PDStringCreateFromStringWithTypeX(utf8, cString[0] == '/' ? PDStringTypeName : PDStringTypeBinary, false, false);
-    printf("compat string = %s\n", compat->data);
-    
-    result = 0 == strcmp(compat->data, cString);
-    if (! result) {
-        // we may have a UTF starting symbol (which is invisible)
-        unsigned char *c = (unsigned char *)compat->data;
-        if (c[0] == 0xef && c[1] == 0xbb && c[2] == 0xbf) {
-            result = 0 == strcmp(&compat->data[3], cString);
-        }
-    }
-    
-    PDRelease(compat);
-    PDRelease(utf8);
-    
-    return result;
-}
-
-
 PDTaskResult taskTestFunc(PDPipeRef pipe, PDTaskRef task, PDObjectRef object, void *info)
 {
     return PDTaskDone;
@@ -276,15 +196,7 @@ describe(@"object arrays", ^{
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
         
-        printf("comparing '%s' vs 'test'\n", str->data);
-        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
-        printf("comparing '%s' vs 'test'\n", utf8->data);
-        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
-        printf("comparing '%s' vs 'test'\n", compat->data);
-        PDRelease(compat);
-        PDRelease(utf8);
-
-        expect(PDStringEqualsCStringX(str, "test")).to.beTruthy();
+        expect(PDStringEqualsCString(str, "test")).to.beTruthy();
     });
     
     it(@"should append twice correctly", ^{
@@ -298,19 +210,11 @@ describe(@"object arrays", ^{
         expect(PDNumberGetInteger(num)).to.equal(0);
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
-        expect(PDStringEqualsCStringX(str, "test")).to.beTruthy();
+        expect(PDStringEqualsCString(str, "test")).to.beTruthy();
         str = PDArrayGetElement(PDObjectGetArray(object), 2);
         expect(str).toNot.beNil();
-        
-        printf("comparing '%s' vs 'test2'\n", str->data);
-        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
-        printf("comparing '%s' vs 'test2'\n", utf8->data);
-        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
-        printf("comparing '%s' vs 'test2'\n", compat->data);
-        PDRelease(compat);
-        PDRelease(utf8);
 
-        expect(PDStringEqualsCStringX(str, "test2")).to.beTruthy();
+        expect(PDStringEqualsCString(str, "test2")).to.beTruthy();
         
     });
     
@@ -322,19 +226,11 @@ describe(@"object arrays", ^{
         expect(strcmp(buf, "1 0 obj\n[ (test) (test2) ]\n")).to.equal(0);
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 0);
         expect(str).toNot.beNil();
-        expect(PDStringEqualsCStringX(str, "test")).to.beTruthy();
+        expect(PDStringEqualsCString(str, "test")).to.beTruthy();
         str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
         
-        printf("comparing '%s' vs 'test2'\n", str->data);
-        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
-        printf("comparing '%s' vs 'test2'\n", utf8->data);
-        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
-        printf("comparing '%s' vs 'test2'\n", compat->data);
-        PDRelease(compat);
-        PDRelease(utf8);
-
-        expect(PDStringEqualsCStringX(str, "test2")).to.beTruthy();
+        expect(PDStringEqualsCString(str, "test2")).to.beTruthy();
         
     });
     
@@ -346,19 +242,11 @@ describe(@"object arrays", ^{
         expect(strcmp(buf, "1 0 obj\n[ (test) (test3) ]\n")).to.equal(0);
         PDStringRef str = PDArrayGetElement(PDObjectGetArray(object), 0);
         expect(str).toNot.beNil();
-        expect(PDStringEqualsCStringX(str, "test"), @"string invalid");
+        expect(PDStringEqualsCString(str, "test"), @"string invalid");
         str = PDArrayGetElement(PDObjectGetArray(object), 1);
         expect(str).toNot.beNil();
-        
-        printf("comparing '%s' vs 'test3'\n", str->data);
-        PDStringRef utf8 = PDStringCreateUTF8Encoded(str);
-        printf("comparing '%s' vs 'test3'\n", utf8->data);
-        PDStringRef compat = PDStringCreateFromStringWithType(utf8, PDStringTypeEscaped, false, false);
-        printf("comparing '%s' vs 'test3'\n", compat->data);
-        PDRelease(compat);
-        PDRelease(utf8);
 
-        expect(PDStringEqualsCStringX(str, "test3")).to.beTruthy();
+        expect(PDStringEqualsCString(str, "test3")).to.beTruthy();
         
     });
     
@@ -447,7 +335,7 @@ describe(@"object dicts", ^{
     XCTAssertTrue(3 == PDNumberGetInteger(PDArrayGetElement(arr, 2)), @"array invalid");
     PDStringRef str = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Far");// PDArrayGetElement(PDObjectGetArray(object), 2);
     XCTAssertNotNull(str, @"null string in dict");
-    XCTAssertTrue(PDStringEqualsCStringX(str, "/Name"), @"string invalid");
+    XCTAssertTrue(PDStringEqualsCString(str, "/Name"), @"string invalid");
     num = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Bar");//PDArrayGetElement(PDObjectGetArray(object), 1);
     XCTAssertTrue(NULL == num, @"value for /Bar should be NULL as it was deleted");
     
@@ -463,7 +351,7 @@ describe(@"object dicts", ^{
     XCTAssertTrue(3 == PDNumberGetInteger(PDArrayGetElement(arr, 2)), @"array invalid");
     str = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Far");// PDArrayGetElement(PDObjectGetArray(object), 2);
     XCTAssertNotNull(str, @"null string in dict");
-    XCTAssertTrue(PDStringEqualsCStringX(str, "/Name"), @"string invalid");
+    XCTAssertTrue(PDStringEqualsCString(str, "/Name"), @"string invalid");
     
     PDDictionarySet(PDObjectGetDictionary(object), "Far", PDAutorelease(PDStringCreateWithName(strdup("/Other"))));
     XCTAssertTrue(2 == PDDictionaryGetCount(PDObjectGetDictionary(object)), @"object dict count invalid");
@@ -477,7 +365,7 @@ describe(@"object dicts", ^{
     XCTAssertTrue(3 == PDNumberGetInteger(PDArrayGetElement(arr, 2)), @"array invalid");
     str = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Far");// PDArrayGetElement(PDObjectGetArray(object), 2);
     XCTAssertNotNull(str, @"null string in dict");
-    XCTAssertTrue(PDStringEqualsCStringX(str, "/Other"), @"string invalid");*/
+    XCTAssertTrue(PDStringEqualsCString(str, "/Other"), @"string invalid");*/
     
     afterAll(^{
         PDRelease(object);
