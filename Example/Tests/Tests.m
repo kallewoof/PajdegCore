@@ -421,7 +421,6 @@ describe(@"scanner nested parentheses", ^{
             expect(PDScannerPopStack(scn, &stack)).to.beTruthy();
 //            XCTAssertTrue(true == PDScannerPopStack(scn, &stack), @"Scanner did not pop a stack as expected.");
             PDDictionaryRef d = PDInstanceCreateFromComplex(&stack);
-            PDDictionaryPrint(d);
             PDStringRef s = PDDictionaryGet(d, [i > 0 ? [NSString stringWithFormat:@"Par%d", i+1] : @"Par" UTF8String]);
             expect(strcmp(req[i], PDStringEscapedValue(s, true, NULL))).to.equal(0);
 //            XCTAssertTrue(0 == strcmp(req[i], PDStringEscapedValue(s, true)), @"invalid result: %s", PDStringEscapedValue(s, true));

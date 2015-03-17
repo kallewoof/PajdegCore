@@ -72,7 +72,6 @@ describe(@"text extraction (japanese)", ^{
             char *buf = malloc(64);
             PDInteger cap = 64;
             PDObjectGenerateDefinition(pageOb, &buf, cap);
-            printf("page object = %s", buf);
             free(buf);
             page = PDPageCreateWithObject(parser, pageOb);
             expect(page).toNot.beNil();
