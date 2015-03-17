@@ -84,7 +84,7 @@ describe(@"text extraction (japanese)", ^{
         expect(count).to.beGreaterThan(0);
         if (count > 0) {
             contentsOb = PDPageGetContentsObjectAtIndex(page, 0);
-            char *contentStream = PDParserLocateAndFetchObjectStreamForObject(parser, contentsOb);
+            const char *contentStream = PDParserLocateAndFetchObjectStreamForObject(parser, contentsOb);
             expect(contentStream).toNot.beNil();
         }
     });

@@ -423,7 +423,7 @@ describe(@"scanner nested parentheses", ^{
             PDDictionaryRef d = PDInstanceCreateFromComplex(&stack);
             PDDictionaryPrint(d);
             PDStringRef s = PDDictionaryGet(d, [i > 0 ? [NSString stringWithFormat:@"Par%d", i+1] : @"Par" UTF8String]);
-            expect(strcmp(req[i], PDStringEscapedValue(s, true))).to.equal(0);
+            expect(strcmp(req[i], PDStringEscapedValue(s, true, NULL))).to.equal(0);
 //            XCTAssertTrue(0 == strcmp(req[i], PDStringEscapedValue(s, true)), @"invalid result: %s", PDStringEscapedValue(s, true));
             //        XCTAssertTrue(0 == strcmp(req[i], (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info)), @"invalid result: %s", (((pd_stack)((pd_stack)stack->prev->prev->info)->info)->prev->prev->info));
             PDRelease(d);
