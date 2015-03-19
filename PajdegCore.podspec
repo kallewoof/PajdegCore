@@ -9,7 +9,7 @@
 
 Pod::Spec.new do |s|
   s.name             = "PajdegCore"
-  s.version          = "0.3.2"
+  s.version          = "0.3.3"
   s.summary          = "C library for mutating PDF files"
   s.description      = <<-DESC
   Pajdeg is a self-contained C library for mutating (modifying) PDFs. 
